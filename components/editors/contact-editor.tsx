@@ -204,22 +204,6 @@ export function ContactEditor() {
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact Form</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="formEnabled"
-              checked={formData.formEnabled}
-              onCheckedChange={(checked) => handleToggleChange("formEnabled", checked)}
-            />
-            <Label htmlFor="formEnabled">Enable Contact Form</Label>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 } 

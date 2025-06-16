@@ -77,7 +77,6 @@ export interface ContactContent {
     twitter: string
     twitterEnabled: boolean
   }
-  formEnabled: boolean
 }
 
 export interface PortfolioContent {
@@ -228,7 +227,6 @@ const defaultContent: PortfolioContent = {
       linkedinEnabled: true,
       twitterEnabled: true,
     },
-    formEnabled: true,
   },
 }
 

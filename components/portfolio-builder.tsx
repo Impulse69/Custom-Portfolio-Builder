@@ -73,6 +73,11 @@ export function PortfolioBuilder() {
       : [...selectedSections, sectionId]
 
     setSelectedSections(newSections)
+
+    // If the section being removed is currently open for editing, close the editor
+    if (!newSections.includes(sectionId) && editingSection === sectionId) {
+      setEditingSection(null)
+    }
   }
 
   const handleEditSection = (sectionId: SectionType) => {
