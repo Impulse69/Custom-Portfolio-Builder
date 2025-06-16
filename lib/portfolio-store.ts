@@ -8,13 +8,19 @@ export interface HeroContent {
   description: string
   availableForWork: boolean
   ctaPrimary: string
+  ctaPrimaryEnabled: boolean
   ctaSecondary: string
+  ctaSecondaryEnabled: boolean
   avatar: string
   socialLinks: {
     github: string
+    githubEnabled: boolean
     linkedin: string
+    linkedinEnabled: boolean
     email: string
+    emailEnabled: boolean
     twitter?: string
+    twitterEnabled: boolean
   }
 }
 
@@ -58,12 +64,18 @@ export interface ContactContent {
   subtitle: string
   description: string
   email: string
+  emailEnabled: boolean
   phone: string
+  phoneEnabled: boolean
   location: string
+  locationEnabled: boolean
   socialLinks: {
     github: string
+    githubEnabled: boolean
     linkedin: string
+    linkedinEnabled: boolean
     twitter: string
+    twitterEnabled: boolean
   }
   formEnabled: boolean
 }
@@ -100,13 +112,19 @@ const defaultContent: PortfolioContent = {
       "Full-Stack Developer & UI/UX Designer crafting beautiful, functional digital experiences with modern technologies.",
     availableForWork: true,
     ctaPrimary: "View My Work",
+    ctaPrimaryEnabled: true,
     ctaSecondary: "Download CV",
+    ctaSecondaryEnabled: true,
     avatar: "JD",
     socialLinks: {
-      github: "https://github.com",
-      linkedin: "https://linkedin.com",
-      email: "john.doe@example.com",
-      twitter: "https://twitter.com",
+      github: "https://github.com/username",
+      linkedin: "https://linkedin.com/in/username",
+      email: "john@example.com",
+      twitter: "https://twitter.com/username",
+      githubEnabled: true,
+      linkedinEnabled: true,
+      emailEnabled: true,
+      twitterEnabled: true,
     },
   },
   about: {
@@ -196,13 +214,19 @@ const defaultContent: PortfolioContent = {
     subtitle: "Let's Work Together",
     description:
       "I'm always interested in new opportunities and exciting projects. Whether you have a question or just want to say hi, feel free to reach out!",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
+    email: "contact@example.com",
+    emailEnabled: true,
+    phone: "+1 (123) 456-7890",
+    phoneEnabled: true,
     location: "San Francisco, CA",
+    locationEnabled: true,
     socialLinks: {
-      github: "https://github.com",
-      linkedin: "https://linkedin.com",
-      twitter: "https://twitter.com",
+      github: "https://github.com/username",
+      linkedin: "https://linkedin.com/in/username",
+      twitter: "https://twitter.com/username",
+      githubEnabled: true,
+      linkedinEnabled: true,
+      twitterEnabled: true,
     },
     formEnabled: true,
   },

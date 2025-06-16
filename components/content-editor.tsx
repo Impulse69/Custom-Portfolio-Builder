@@ -8,6 +8,7 @@ import { usePortfolioStore } from "@/lib/portfolio-store"
 import { HeroEditor } from "@/components/editors/hero-editor"
 import { AboutEditor } from "@/components/editors/about-editor"
 // import { ProjectsEditor } from "@/components/editors/projects-editor"
+import { ContactEditor } from "@/components/editors/contact-editor"
 // import { ContactEditor } from "@/components/editors/contact-editor"
 
 const sectionNames = {
@@ -31,7 +32,7 @@ export function ContentEditor() {
       case "projects":
         return <div className="p-4 text-center text-muted-foreground">Projects editor coming soon...</div>
       case "contact":
-        return <div className="p-4 text-center text-muted-foreground">Contact editor coming soon...</div>
+        return <ContactEditor />
       default:
         return null
     }

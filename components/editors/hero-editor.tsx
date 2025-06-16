@@ -24,6 +24,19 @@ export function HeroEditor() {
     updateHeroContent({ socialLinks: newSocialLinks })
   }
 
+  const handleToggleChange = (field: keyof HeroContent | `socialLinks.${keyof HeroContent["socialLinks"]}` , checked: boolean) => {
+    if (field.startsWith("socialLinks.")) {
+      const platform = field.split(".")[1] as keyof HeroContent["socialLinks"]
+      const newSocialLinks = { ...formData.socialLinks, [`${platform}Enabled`]: checked }
+      setFormData({ ...formData, socialLinks: newSocialLinks })
+      updateHeroContent({ socialLinks: newSocialLinks })
+    } else {
+      const newData = { ...formData, [`${field}Enabled`]: checked }
+      setFormData(newData)
+      updateHeroContent({ [`${field}Enabled`]: checked })
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -107,6 +120,14 @@ export function HeroEditor() {
               onChange={(e) => handleChange("ctaPrimary", e.target.value)}
               placeholder="View My Work"
             />
+            <div className="flex items-center space-x-2 mt-2">
+              <Switch
+                id="ctaPrimaryEnabled"
+                checked={formData.ctaPrimaryEnabled}
+                onCheckedChange={(checked) => handleToggleChange("ctaPrimary", checked)}
+              />
+              <Label htmlFor="ctaPrimaryEnabled">Enable Primary Button</Label>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -117,6 +138,14 @@ export function HeroEditor() {
               onChange={(e) => handleChange("ctaSecondary", e.target.value)}
               placeholder="Download CV"
             />
+            <div className="flex items-center space-x-2 mt-2">
+              <Switch
+                id="ctaSecondaryEnabled"
+                checked={formData.ctaSecondaryEnabled}
+                onCheckedChange={(checked) => handleToggleChange("ctaSecondary", checked)}
+              />
+              <Label htmlFor="ctaSecondaryEnabled">Enable Secondary Button</Label>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -135,6 +164,14 @@ export function HeroEditor() {
               onChange={(e) => handleSocialChange("github", e.target.value)}
               placeholder="https://github.com/username"
             />
+            <div className="flex items-center space-x-2 mt-2">
+              <Switch
+                id="githubEnabled"
+                checked={formData.socialLinks.githubEnabled}
+                onCheckedChange={(checked) => handleToggleChange("socialLinks.github", checked)}
+              />
+              <Label htmlFor="githubEnabled">Enable GitHub Link</Label>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -146,6 +183,14 @@ export function HeroEditor() {
               onChange={(e) => handleSocialChange("linkedin", e.target.value)}
               placeholder="https://linkedin.com/in/username"
             />
+            <div className="flex items-center space-x-2 mt-2">
+              <Switch
+                id="linkedinEnabled"
+                checked={formData.socialLinks.linkedinEnabled}
+                onCheckedChange={(checked) => handleToggleChange("socialLinks.linkedin", checked)}
+              />
+              <Label htmlFor="linkedinEnabled">Enable LinkedIn Link</Label>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -157,6 +202,14 @@ export function HeroEditor() {
               onChange={(e) => handleSocialChange("email", e.target.value)}
               placeholder="john@example.com"
             />
+            <div className="flex items-center space-x-2 mt-2">
+              <Switch
+                id="emailEnabled"
+                checked={formData.socialLinks.emailEnabled}
+                onCheckedChange={(checked) => handleToggleChange("socialLinks.email", checked)}
+              />
+              <Label htmlFor="emailEnabled">Enable Email Link</Label>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -168,6 +221,14 @@ export function HeroEditor() {
               onChange={(e) => handleSocialChange("twitter", e.target.value)}
               placeholder="https://twitter.com/username"
             />
+            <div className="flex items-center space-x-2 mt-2">
+              <Switch
+                id="twitterEnabled"
+                checked={formData.socialLinks.twitterEnabled}
+                onCheckedChange={(checked) => handleToggleChange("socialLinks.twitter", checked)}
+              />
+              <Label htmlFor="twitterEnabled">Enable Twitter Link</Label>
+            </div>
           </div>
         </CardContent>
       </Card>

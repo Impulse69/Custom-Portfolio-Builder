@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { motion } from "framer-motion"
 import { Mail, Phone, MapPin, Send, Github, Linkedin, Twitter } from "lucide-react"
 import type { ContactContent } from "@/lib/portfolio-store"
+import { Switch } from "@/components/ui/switch"
 
 interface ContactSectionProps {
   content: ContactContent
@@ -44,18 +45,21 @@ export function ContactSection({ content }: ContactSectionProps) {
       label: "Email",
       value: content.email,
       href: `mailto:${content.email}`,
+      enabled: content.emailEnabled,
     },
     {
       icon: Phone,
       label: "Phone",
       value: content.phone,
       href: `tel:${content.phone.replace(/\D/g, "")}`,
+      enabled: content.phoneEnabled,
     },
     {
       icon: MapPin,
       label: "Location",
       value: content.location,
       href: "#",
+      enabled: content.locationEnabled,
     },
   ]
 
@@ -65,18 +69,21 @@ export function ContactSection({ content }: ContactSectionProps) {
       label: "GitHub",
       href: content.socialLinks.github,
       username: "@johndoe",
+      enabled: content.socialLinks.githubEnabled,
     },
     {
       icon: Linkedin,
       label: "LinkedIn",
       href: content.socialLinks.linkedin,
       username: "John Doe",
+      enabled: content.socialLinks.linkedinEnabled,
     },
     {
       icon: Twitter,
       label: "Twitter",
       href: content.socialLinks.twitter,
       username: "@johndoe",
+      enabled: content.socialLinks.twitterEnabled,
     },
   ]
 
@@ -193,7 +200,7 @@ export function ContactSection({ content }: ContactSectionProps) {
               <div className="space-y-4">
                 {contactInfo.map((info, index) => {
                   const Icon = info.icon
-                  return (
+                  return info.enabled && (
                     <motion.div
                       key={info.label}
                       initial={{ opacity: 0, y: 20 }}
@@ -225,7 +232,7 @@ export function ContactSection({ content }: ContactSectionProps) {
               <div className="space-y-4">
                 {socialLinks.map((social, index) => {
                   const Icon = social.icon
-                  return (
+                  return social.enabled && (
                     <motion.div
                       key={social.label}
                       initial={{ opacity: 0, y: 20 }}
@@ -259,12 +266,14 @@ export function ContactSection({ content }: ContactSectionProps) {
               <div className="text-center">
                 <h4 className="font-bold mb-2">Ready to start a project?</h4>
                 <p className="text-muted-foreground mb-4">I'm available for freelance work and new opportunities.</p>
-                <Button asChild>
-                  <a href={`mailto:${content.email}`}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Let's Talk
-                  </a>
-                </Button>
+                {content.emailEnabled && (
+                  <Button asChild>
+                    <a href={`mailto:${content.email}`}>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Let's Talk
+                    </a>
+                  </Button>
+                )}
               </div>
             </Card>
           </motion.div>
