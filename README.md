@@ -32,7 +32,7 @@ A web-based, no-code portfolio builder built with **React**, **Next.js**, **Type
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/your-username/portfolio-builder.git
+git clone https://github.com/Impulse69/portfolio-builder.git
 cd portfolio-builder
 ```
 
