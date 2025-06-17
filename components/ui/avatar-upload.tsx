@@ -8,14 +8,14 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Upload, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  // Dialog,
+  // DialogContent,
+  // DialogHeader,
+  // DialogTitle,
+  // DialogFooter,
 } from '@/components/ui/dialog'
-import Cropper from 'react-easy-crop'
-import type { Area } from 'react-easy-crop'
+// import Cropper from 'react-easy-crop'
+// import type { Area } from 'react-easy-crop'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 
@@ -29,61 +29,61 @@ interface AvatarUploadProps {
   className?: string
 }
 
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new Image()
-    image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', (error) => reject(error))
-    image.setAttribute('crossOrigin', 'anonymous') // Needed for cross-origin images
-    image.src = url
-  })
+// const createImage = (url: string): Promise<HTMLImageElement> =>
+//   new Promise((resolve, reject) => {
+//     const image = new Image()
+//     image.addEventListener('load', () => resolve(image))
+//     image.addEventListener('error', (error) => reject(error))
+//     image.setAttribute('crossOrigin', 'anonymous') // Needed for cross-origin images
+//     image.src = url
+//   })
 
-const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob | null> => {
-  const image = await createImage(imageSrc)
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
+// const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob | null> => {
+//   const image = await createImage(imageSrc)
+//   const canvas = document.createElement('canvas')
+//   const ctx = canvas.getContext('2d')
 
-  if (!ctx) {
-    return null
-  }
+//   if (!ctx) {
+//     return null
+//   }
 
-  const scaleX = image.naturalWidth / image.width
-  const scaleY = image.naturalHeight / image.height
+//   const scaleX = image.naturalWidth / image.width
+//   const scaleY = image.naturalHeight / image.height
 
-  canvas.width = pixelCrop.width
-  canvas.height = pixelCrop.height
+//   canvas.width = pixelCrop.width
+//   canvas.height = pixelCrop.height
 
-  ctx.drawImage(
-    image,
-    pixelCrop.x * scaleX,
-    pixelCrop.y * scaleY,
-    pixelCrop.width * scaleX,
-    pixelCrop.height * scaleY,
-    0,
-    0,
-    pixelCrop.width,
-    pixelCrop.height
-  )
+//   ctx.drawImage(
+//     image,
+//     pixelCrop.x * scaleX,
+//     pixelCrop.y * scaleY,
+//     pixelCrop.width * scaleX,
+//     pixelCrop.height * scaleY,
+//     0,
+//     0,
+//     pixelCrop.width,
+//     pixelCrop.height
+//   )
 
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(blob)
-    }, 'image/png') // We want to send raw uncompressed image, png is good for that
-  })
-}
+//   return new Promise((resolve) => {
+//     canvas.toBlob((blob) => {
+//       resolve(blob)
+//     }, 'image/png') // We want to send raw uncompressed image, png is good for that
+//   })
+// }
 
 export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
-  const [imageSrc, setImageSrc] = useState<string | null>(null)
-  const [crop, setCrop] = useState({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [rotation, setRotation] = useState(0)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  // const [imageSrc, setImageSrc] = useState<string | null>(null)
+  // const [crop, setCrop] = useState({ x: 0, y: 0 })
+  // const [zoom, setZoom] = useState(1)
+  // const [rotation, setRotation] = useState(0)
+  // const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels)
-  }, [])
+  // const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+  //   setCroppedAreaPixels(croppedAreaPixels)
+  // }, [])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -95,26 +95,29 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      setImageSrc(reader.result as string)
-    }
-    reader.readAsDataURL(file)
+    // Directly upload the file without cropping
+    await handleUploadImage(file)
+
+    // const reader = new FileReader()
+    // reader.onload = () => {
+    //   setImageSrc(reader.result as string)
+    // }
+    // reader.readAsDataURL(file)
   }
 
-  const handleSaveCroppedImage = async () => {
-    if (!imageSrc || !croppedAreaPixels) return
+  const handleUploadImage = async (file: File) => {
+    // if (!imageSrc || !croppedAreaPixels) return // No longer needed for direct upload
 
     setIsUploading(true)
     try {
-      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels)
+      // const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels)
 
-      if (!croppedBlob) {
-        throw new Error('Failed to crop image.')
-      }
+      // if (!croppedBlob) {
+      //   throw new Error('Failed to crop image.')
+      // }
 
       const formData = new FormData()
-      formData.append('file', croppedBlob, 'avatar.png') // Send as png
+      formData.append('file', file, file.name) // Send the original file
 
       const response = await fetch('/api/upload-avatar', {
         method: 'POST',
@@ -133,7 +136,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
         imageUrl: result.imageUrl,
         initials: value.initials,
       })
-      setImageSrc(null) // Close cropper modal
+      // setImageSrc(null) // No longer needed for direct upload
     } catch (error) {
       console.error('Upload error:', error)
       alert(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -248,7 +251,8 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
         className="hidden"
       />
 
-      <Dialog open={!!imageSrc} onOpenChange={() => setImageSrc(null)}>
+      {/* Cropper Dialog Removed Temporarily */}
+      {/* <Dialog open={!!imageSrc} onOpenChange={() => setImageSrc(null)}>
         <DialogContent className="sm:max-w-[425px] h-[500px] flex flex-col p-0">
           <DialogHeader className="p-6 pb-4">
             <DialogTitle>Crop Image</DialogTitle>
@@ -313,7 +317,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   )
 }
