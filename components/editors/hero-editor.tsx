@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AvatarUpload } from "@/components/ui/avatar-upload"
 import { usePortfolioStore, type HeroContent } from "@/lib/portfolio-store"
 
 export function HeroEditor() {
@@ -16,6 +17,11 @@ export function HeroEditor() {
     const newData = { ...formData, [field]: value }
     setFormData(newData)
     updateHeroContent({ [field]: value })
+  }
+
+  const handleAvatarChange = (avatar: { type: 'image' | 'initials'; imageUrl?: string; initials: string }) => {
+    setFormData({ ...formData, avatar })
+    updateHeroContent({ avatar })
   }
 
   const handleSocialChange = (platform: keyof HeroContent["socialLinks"], value: string) => {
@@ -86,13 +92,10 @@ export function HeroEditor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="avatar">Avatar Text</Label>
-            <Input
-              id="avatar"
+            <Label htmlFor="avatar">Avatar</Label>
+            <AvatarUpload
               value={formData.avatar}
-              onChange={(e) => handleChange("avatar", e.target.value)}
-              placeholder="JD"
-              maxLength={3}
+              onChange={(value) => handleAvatarChange(value)}
             />
           </div>
 

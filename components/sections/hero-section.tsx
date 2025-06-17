@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Github, Linkedin, Mail, Download, ArrowRight, Twitter } from "lucide-react"
 import { motion } from "framer-motion"
 import type { HeroContent } from "@/lib/portfolio-store"
@@ -38,9 +39,16 @@ export function HeroSection({ content }: HeroSectionProps) {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="relative mx-auto w-32 h-32 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-4xl font-bold text-primary-foreground"
+            className="relative mx-auto w-32 h-32 rounded-full"
           >
-            {content.avatar}
+            <Avatar className="w-full h-full">
+              {content.avatar.type === 'image' && content.avatar.imageUrl ? (
+                <AvatarImage src={content.avatar.imageUrl} alt={content.name} />
+              ) : null}
+              <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
+                {content.avatar.initials}
+              </AvatarFallback>
+            </Avatar>
           </motion.div>
 
           <div className="space-y-4">

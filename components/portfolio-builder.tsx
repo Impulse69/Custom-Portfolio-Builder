@@ -24,6 +24,7 @@ import { usePortfolioStore } from "@/lib/portfolio-store"
 import type { SectionType } from "@/types/portfolio"
 import Link from "next/link"
 import { ClientOnly } from "@/components/client-only"
+import { useToast } from "@/hooks/use-toast"
 
 const LucideUser = dynamic(() => import("lucide-react").then((mod) => mod.User), { ssr: false })
 const LucideHome = dynamic(() => import("lucide-react").then((mod) => mod.Home), { ssr: false })
@@ -66,9 +67,11 @@ const sections = [
 export function PortfolioBuilder() {
   const { selectedSections, setSelectedSections, editingSection, setEditingSection, content } = usePortfolioStore()
   const { theme, setTheme } = useTheme()
+  const { toast } = useToast()
 
   const toggleSection = (sectionId: SectionType) => {
-    const newSections = selectedSections.includes(sectionId)
+    const wasSelected = selectedSections.includes(sectionId)
+    const newSections = wasSelected
       ? selectedSections.filter((id) => id !== sectionId)
       : [...selectedSections, sectionId]
 
@@ -78,6 +81,14 @@ export function PortfolioBuilder() {
     if (!newSections.includes(sectionId) && editingSection === sectionId) {
       setEditingSection(null)
     }
+
+    // Get the section name for the toast message
+    const sectionName = sections.find((s) => s.id === sectionId)?.name || sectionId
+
+    toast({
+      title: wasSelected ? "Section removed" : "Section added",
+      description: `${sectionName} section has been ${wasSelected ? "removed from" : "added to"} the portfolio.`,
+    })
   }
 
   const handleEditSection = (sectionId: SectionType) => {
