@@ -2,14 +2,33 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Initialize Supabase client
+<<<<<<< HEAD
 const supabaseUrl = "https://ntqtginlrtwwhexyaqxp.supabase.co";
 const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cXRnaW5scnR3d2hleHlhcXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxNTAxMTMsImV4cCI6MjA2NTcyNjExM30.1oTJ6MP9xgj35Ba64BcaZxjO61NPn4TRq_oY-4S24fU";
 const supabaseBucket = "avatars"; // or your custom bucket name
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
+=======
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseBucket = process.env.SUPABASE_AVATAR_BUCKET || 'avatars'
+
+// Only create client if environment variables are available
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
+>>>>>>> 947208181c8e5d050746fb261769b8b14fcc9ea3
 
 export async function POST(request: NextRequest) {
   try {
+    // Check for Supabase environment variables at runtime
+    if (!supabaseUrl || !supabaseAnonKey || !supabase) {
+      return NextResponse.json(
+        { error: 'Supabase configuration not available' },
+        { status: 503 }
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     

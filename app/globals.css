@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  If you want to use line clamping, install the official Tailwind plugin:
+  https://tailwindcss.com/docs/line-clamp
+  and use the class `line-clamp-2` instead of a custom utility.
+*/
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -73,9 +79,7 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -89,13 +93,7 @@
     background-image: radial-gradient(circle, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
     background-size: 20px 20px;
   }
-
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+  /* Remove the custom .line-clamp-2 utility if using Tailwind's plugin */
 }
 
 /* Add smooth scrolling */
