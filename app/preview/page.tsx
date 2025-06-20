@@ -47,7 +47,7 @@ export default function PreviewPage() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <div className="min-h-screen bg-background">
-        <PreviewNavigation sections={selectedSections} />
+        <PreviewNavigation sections={selectedSections as SectionType[]} />
 
         <main className="relative">
           {selectedSections.length === 0 ? (
