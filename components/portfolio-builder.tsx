@@ -25,6 +25,7 @@ import type { SectionType } from "@/types/portfolio"
 import Link from "next/link"
 import { ClientOnly } from "@/components/client-only"
 import { useToast } from "@/hooks/use-toast"
+import { useRef } from "react"
 
 const LucideUser = dynamic(() => import("lucide-react").then((mod) => mod.User), { ssr: false })
 const LucideHome = dynamic(() => import("lucide-react").then((mod) => mod.Home), { ssr: false })
@@ -65,9 +66,10 @@ const sections = [
 ]
 
 export function PortfolioBuilder() {
-  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content } = usePortfolioStore()
+  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, resetToDefaults } = usePortfolioStore()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
+  const dialogRef = useRef<HTMLDialogElement | null>(null)
 
   const toggleSection = (sectionId: SectionType) => {
     const wasSelected = selectedSections.includes(sectionId)
@@ -108,6 +110,32 @@ export function PortfolioBuilder() {
       default:
         return null
     }
+  }
+
+  // Utility to clear all storage and reset state
+  function resetToDefaultState() {
+    // Clear Zustand persisted state
+    localStorage.removeItem("portfolio-content")
+    // Clear all local/session storage (optional: restrict to app keys)
+    localStorage.clear()
+    sessionStorage.clear()
+    // Reset Zustand state
+    resetToDefaults()
+    // Optionally, force a reload to ensure UI updates everywhere
+    window.location.reload()
+  }
+
+  function handleResetClick() {
+    if (dialogRef.current) dialogRef.current.showModal()
+  }
+
+  function handleConfirmReset() {
+    if (dialogRef.current) dialogRef.current.close()
+    resetToDefaultState()
+  }
+
+  function handleCancelReset() {
+    if (dialogRef.current) dialogRef.current.close()
   }
 
   return (
@@ -181,6 +209,26 @@ export function PortfolioBuilder() {
                     <LucideDownload className="h-4 w-4 mr-2" />
                     Export
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-muted-foreground hover:text-destructive"
+                    onClick={handleResetClick}
+                    style={{ opacity: 0.85 }}
+                  >
+                    <span className="mr-2">↺</span>
+                    Reset
+                  </Button>
+                  <dialog ref={dialogRef} className="rounded-lg p-6 shadow-xl border bg-background z-50">
+                    <div className="mb-4 text-lg font-semibold">Reset Portfolio?</div>
+                    <div className="mb-6 text-sm text-muted-foreground">
+                      Are you sure you want to reset your portfolio? This will erase all your changes.
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" onClick={handleCancelReset}>Cancel</Button>
+                      <Button variant="destructive" size="sm" onClick={handleConfirmReset}>Reset</Button>
+                    </div>
+                  </dialog>
                 </div>
               </div>
 

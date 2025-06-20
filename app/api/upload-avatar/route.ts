@@ -6,14 +6,21 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseBucket = process.env.SUPABASE_AVATAR_BUCKET || 'avatars'
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Only create client if environment variables are available
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
 export async function POST(request: NextRequest) {
   try {
+    // Check for Supabase environment variables at runtime
+    if (!supabaseUrl || !supabaseAnonKey || !supabase) {
+      return NextResponse.json(
+        { error: 'Supabase configuration not available' },
+        { status: 503 }
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     
