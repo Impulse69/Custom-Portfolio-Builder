@@ -130,7 +130,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
       }
 
       const result = await response.json()
-      
+      console.log("Upload result:", result);
       onChange({
         type: 'image',
         imageUrl: result.imageUrl,
