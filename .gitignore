@@ -18,6 +18,12 @@ yarn-error.log*
 
 # env files
 .env*
+.env.local
+
+# security files
+supabase-credentials.txt
+start-dev-secure.ps1
+dev.ps1
 
 # vercel
 .vercel
