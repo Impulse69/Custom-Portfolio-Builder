@@ -75,7 +75,7 @@ export default function PreviewPage() {
                 transition={{ delay: index * 0.1, duration: 0.6 }}
                 className="scroll-mt-20"
               >
-                {renderSection(sectionId)}
+                {renderSection(sectionId as SectionType)}
               </motion.div>
             ))
           )}
