@@ -39,13 +39,13 @@ export function HeroSection({ content }: HeroSectionProps) {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="relative mx-auto w-40 h-40 rounded-full"
+            className="relative mx-auto w-48 h-48 rounded-full"
           >
             <Avatar className="w-full h-full">
               {content.avatar.imageUrl ? (
                 <AvatarImage src={content.avatar.imageUrl} alt={content.name} />
               ) : null}
-              <AvatarFallback className="text-5xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
+              <AvatarFallback className="text-6xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
                 {content.avatar.initials}
               </AvatarFallback>
             </Avatar>
@@ -116,7 +116,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               content.socialLinks.linkedinEnabled && { icon: LucideLinkedin, href: content.socialLinks.linkedin, label: "LinkedIn" },
               content.socialLinks.emailEnabled && { icon: LucideMail, href: `mailto:${content.socialLinks.email}`, label: "Email" },
               content.socialLinks.twitterEnabled && content.socialLinks.twitter && { icon: LucideTwitter, href: content.socialLinks.twitter, label: "Twitter" },
-            ].filter(Boolean).map(({ icon: Icon, href, label }) => (
+            ].filter((item): item is { icon: React.ComponentType<any>, href: string, label: string } => Boolean(item)).map(({ icon: Icon, href, label }) => (
               <Button
                 key={label}
                 variant="ghost"
