@@ -1,19 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Initialize Supabase client
-const supabaseUrl = "https://ntqtginlrtwwhexyaqxp.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cXRnaW5scnR3d2hleHlhcXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxNTAxMTMsImV4cCI6MjA2NTcyNjExM30.1oTJ6MP9xgj35Ba64BcaZxjO61NPn4TRq_oY-4S24fU";
-const supabaseBucket = "avatars"; // or your custom bucket name
+// Load from .env.local
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseBucket = process.env.SUPABASE_AVATAR_BUCKET || 'avatars';
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Only create client if environment variables are available
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
 export async function POST(request: NextRequest) {
   try {
     // Check for Supabase environment variables at runtime
     if (!supabaseUrl || !supabaseAnonKey || !supabase) {
+      console.error('Supabase configuration missing. Please check your environment variables.');
+      
       return NextResponse.json(
-        { error: 'Supabase configuration not available' },
+        { 
+          error: 'Avatar upload is not configured. Please check your environment variables.',
+          details: 'Missing Supabase URL and/or Anon Key. Check your .env.local file contains SUPABASE_URL and SUPABASE_ANON_KEY'
+        },
         { status: 503 }
       )
     }
@@ -65,7 +73,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       imageUrl: publicUrlData.publicUrl,
-      publicId: data.path, // Supabase uses path as identifier
+      publicId: data.path,
     })
 
   } catch (error) {
@@ -75,4 +83,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
