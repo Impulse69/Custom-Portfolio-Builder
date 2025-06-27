@@ -37,6 +37,9 @@ const LucidePalette = dynamic(() => import("lucide-react").then((mod) => mod.Pal
 const LucideEye = dynamic(() => import("lucide-react").then((mod) => mod.Eye), { ssr: false })
 const LucideDownload = dynamic(() => import("lucide-react").then((mod) => mod.Download), { ssr: false })
 const LucideSettings = dynamic(() => import("lucide-react").then((mod) => mod.Settings), { ssr: false })
+const LucideHelpCircle = dynamic(() => import("lucide-react").then((mod) => mod.HelpCircle), { ssr: false })
+const LucideRotateCcw = dynamic(() => import("lucide-react").then((mod) => mod.RotateCcw), { ssr: false })
+const LucideRotateCw = dynamic(() => import("lucide-react").then((mod) => mod.RotateCw), { ssr: false })
 
 const sections = [
   {
@@ -66,7 +69,7 @@ const sections = [
 ]
 
 export function PortfolioBuilder() {
-  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, resetToDefaults } = usePortfolioStore()
+  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, resetToDefaults, undo, redo, canUndo, canRedo } = usePortfolioStore()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
   const dialogRef = useRef<HTMLDialogElement | null>(null)
@@ -156,7 +159,7 @@ export function PortfolioBuilder() {
 
           <SidebarContent className="p-4">
             <div className="space-y-4">
-              <div>
+              <div id="tour-step-1-sections">
                 <h3 className="mb-3 text-sm font-medium text-muted-foreground">SECTIONS</h3>
                 <SidebarMenu className="space-y-2">
                   {sections.map((section) => {
@@ -179,6 +182,7 @@ export function PortfolioBuilder() {
                           </SidebarMenuButton>
                           {isSelected && (
                             <Button
+                              id={`tour-step-4-settings-${section.id}`}
                               variant={isEditing ? "default" : "ghost"}
                               size="icon"
                               className="h-8 w-8 shrink-0"
@@ -196,7 +200,7 @@ export function PortfolioBuilder() {
 
               <Separator />
 
-              <div className="space-y-2">
+              <div className="space-y-2" id="tour-step-2-actions">
                 <h3 className="text-sm font-medium text-muted-foreground">ACTIONS</h3>
                 <div className="space-y-2">
                   <Button variant="outline" size="sm" className="w-full justify-start" asChild>
@@ -210,15 +214,46 @@ export function PortfolioBuilder() {
                     Export
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="w-full justify-start text-muted-foreground hover:text-destructive"
-                    onClick={handleResetClick}
-                    style={{ opacity: 0.85 }}
+                    className="w-full justify-start"
+                    onClick={() => window.dispatchEvent(new CustomEvent("restart-tour"))}
                   >
-                    <span className="mr-2">↺</span>
-                    Reset
+                    <LucideHelpCircle className="h-4 w-4 mr-2" />
+                    Tour
                   </Button>
+                  <div className="flex gap-2 w-full">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 justify-center text-muted-foreground"
+                      onClick={undo}
+                      disabled={!canUndo}
+                      title="Undo"
+                    >
+                      <LucideRotateCcw className="h-4 w-4 mr-2" /> Undo
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 justify-center text-muted-foreground"
+                      onClick={redo}
+                      disabled={!canRedo}
+                      title="Redo"
+                    >
+                      <LucideRotateCw className="h-4 w-4 mr-2" /> Redo
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 justify-center text-muted-foreground hover:text-destructive"
+                      onClick={handleResetClick}
+                      style={{ opacity: 0.85 }}
+                      title="Reset"
+                    >
+                      <span className="mr-2">↺</span> Reset
+                    </Button>
+                  </div>
                   <dialog ref={dialogRef} className="rounded-lg p-6 shadow-xl border bg-background z-50">
                     <div className="mb-4 text-lg font-semibold">Reset Portfolio?</div>
                     <div className="mb-6 text-sm text-muted-foreground">
@@ -271,49 +306,29 @@ export function PortfolioBuilder() {
             )}
           </header>
 
-          <main className="flex-1 overflow-auto">
-            <div className="min-h-full">
-              <AnimatePresence mode="wait">
+          <main className="flex-1 overflow-y-auto p-4 md:p-8" id="tour-step-3-preview">
+            <div className="mx-auto max-w-5xl space-y-8">
                 {selectedSections.length === 0 ? (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="flex h-full items-center justify-center p-8"
-                  >
+                <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted bg-muted/20 p-12 text-center min-h-[calc(100vh-4rem)]">
                     <div className="text-center">
                       <LucidePalette className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Start Building Your Portfolio</h3>
-                      <p className="text-muted-foreground max-w-md">
-                        Select sections from the sidebar to start building your portfolio. You can add multiple sections
-                        and see them rendered in real-time.
+                    <h2 className="text-2xl font-bold mb-2">Your Portfolio is Empty</h2>
+                    <p className="text-muted-foreground">
+                      Select a section from the left sidebar to start building your portfolio.
                       </p>
                     </div>
-                  </motion.div>
+                </div>
                 ) : (
                   <motion.div
-                    key="sections"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-0"
-                  >
-                    {selectedSections.map((sectionId, index) => (
-                      <motion.div
-                        key={sectionId}
-                        initial={{ opacity: 0, y: 50 }}
+                  key={selectedSections.join("-")}
+                  initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -50 }}
-                        transition={{ delay: index * 0.1 }}
-                        className={`${editingSection === sectionId ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-8"
                       >
-                        {renderSection(sectionId as SectionType)}
-                      </motion.div>
-                    ))}
+                  {selectedSections.map((sectionId) => renderSection(sectionId as SectionType))}
                   </motion.div>
                 )}
-              </AnimatePresence>
             </div>
           </main>
         </SidebarInset>

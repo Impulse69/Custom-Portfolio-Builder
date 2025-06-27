@@ -19,7 +19,7 @@ export function HeroEditor() {
     updateHeroContent({ [field]: value })
   }
 
-  const handleAvatarChange = (avatar: { type: 'image' | 'initials'; imageUrl?: string; initials: string }) => {
+  const handleAvatarChange = (avatar: { imageUrl?: string; initials: string }) => {
     setFormData({ ...formData, avatar })
     updateHeroContent({ avatar })
   }

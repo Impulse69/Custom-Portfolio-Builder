@@ -12,7 +12,6 @@ export interface HeroContent {
   ctaSecondary: string
   ctaSecondaryEnabled: boolean
   avatar: {
-    type: 'image' | 'initials'
     imageUrl?: string
     initials: string
   }
@@ -119,7 +118,6 @@ const defaultContent: PortfolioContent = {
     ctaSecondary: "Download CV",
     ctaSecondaryEnabled: true,
     avatar: {
-      type: 'initials',
       initials: "JD",
     },
     socialLinks: {
@@ -323,9 +321,7 @@ export const usePortfolioStore = create<PortfolioStore>()(
           } else if (typeof state.content.hero.avatar.initials !== 'string') {
             state.content.hero.avatar.initials = "JD";
           }
-          if (!state.content.hero.avatar.type) {
-            state.content.hero.avatar.type = 'initials';
-          }
+          
         }
       },
     }),

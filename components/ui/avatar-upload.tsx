@@ -21,11 +21,13 @@ import { Separator } from '@/components/ui/separator'
 
 interface AvatarUploadProps {
   value: {
-    type: 'image' | 'initials'
     imageUrl?: string
     initials: string
   }
-  onChange: (value: { type: 'image' | 'initials'; imageUrl?: string; initials: string }) => void
+  onChange: (value: {
+    imageUrl?: string
+    initials: string
+  }) => void
   className?: string
 }
 
@@ -112,7 +114,6 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
       }
       const result = await response.json()
       onChange({
-        type: 'image',
         imageUrl: result.imageUrl,
         initials: value.initials,
       })
@@ -127,7 +128,6 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
 
   const handleRemoveImage = () => {
     onChange({
-      type: 'initials',
       initials: value.initials,
     })
   }
@@ -171,56 +171,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-xs">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="avatarType"
-            checked={value.type === 'image'}
-            onCheckedChange={(checked) => handleTypeChange(checked ? 'image' : 'initials')}
-          />
-          <Label htmlFor="avatarType">Use Image Avatar</Label>
-        </div>
-
-        {value.type === 'image' ? (
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Image
-            </Button>
-            
-            {value.imageUrl && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleRemoveImage}
-                disabled={isUploading}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Remove
-              </Button>
-            )}
-          </div>
-        ) : null}
-
-        {value.type === 'initials' && (
-          <div className="space-y-2 w-full">
-            <Label htmlFor="initials">Initials</Label>
-            <Input
-              id="initials"
-              value={value.initials}
-              onChange={(e) => handleInitialsChange(e.target.value)}
-              placeholder="JD"
-              maxLength={3}
-              className="text-center uppercase"
-            />
-          </div>
-        )}
+        
       </div>
 
       <input
