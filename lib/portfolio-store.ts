@@ -13,7 +13,6 @@ export interface HeroContent {
   ctaSecondaryEnabled: boolean
   avatar: {
     imageUrl?: string
-    initials: string
   }
   socialLinks: {
     github: string
@@ -117,9 +116,7 @@ const defaultContent: PortfolioContent = {
     ctaPrimaryEnabled: true,
     ctaSecondary: "Download CV",
     ctaSecondaryEnabled: true,
-    avatar: {
-      initials: "JD",
-    },
+    avatar: {},
     socialLinks: {
       github: "https://github.com/username",
       linkedin: "https://linkedin.com/in/username",
@@ -313,17 +310,7 @@ export const usePortfolioStore = create<PortfolioStore>()(
 
       resetToDefaults: () => set({ content: defaultContent }),
 
-      onRehydrateStorage: (state: PortfolioStore) => {
-        if (state) {
-          // Ensure avatar structure and initials are always valid
-          if (!state.content.hero.avatar) {
-            state.content.hero.avatar = { type: 'initials', initials: "JD" };
-          } else if (typeof state.content.hero.avatar.initials !== 'string') {
-            state.content.hero.avatar.initials = "JD";
-          }
-          
-        }
-      },
+      
     }),
     {
       name: "portfolio-content",

@@ -2,10 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Upload, X, Loader2 } from 'lucide-react'
+import { Loader2, Edit } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   Dialog,
@@ -16,18 +14,21 @@ import {
 } from '@/components/ui/dialog'
 import Cropper from 'react-easy-crop'
 import type { Area } from 'react-easy-crop'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface AvatarUploadProps {
   value: {
     imageUrl?: string
-    initials: string
   }
   onChange: (value: {
     imageUrl?: string
-    initials: string
   }) => void
+  name: string
   className?: string
 }
 
@@ -36,7 +37,7 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
     const image = new Image()
     image.addEventListener('load', () => resolve(image))
     image.addEventListener('error', (error) => reject(error))
-    image.setAttribute('crossOrigin', 'anonymous') // Needed for cross-origin images
+    image.setAttribute('crossOrigin', 'anonymous')
     image.src = url
   })
 
@@ -67,7 +68,7 @@ const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob | 
   })
 }
 
-export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) {
+export function AvatarUpload({ value, onChange, name, className }: AvatarUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
@@ -78,6 +79,14 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
   const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
   }, [])
+
+  const getInitials = (name: string) => {
+    const [firstName, lastName] = name.split(' ')
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`
+    }
+    return name.slice(0, 2)
+  }
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -115,7 +124,6 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
       const result = await response.json()
       onChange({
         imageUrl: result.imageUrl,
-        initials: value.initials,
       })
       setImageSrc(null)
     } catch (error) {
@@ -127,52 +135,44 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
   }
 
   const handleRemoveImage = () => {
-    onChange({
-      initials: value.initials,
-    })
+    onChange({})
   }
-
-  const handleInitialsChange = (initials: string) => {
-    onChange({
-      type: value.type,
-      imageUrl: value.imageUrl,
-      initials: initials.toUpperCase().slice(0, 3),
-    })
-  }
-
-  const handleTypeChange = (newType: 'image' | 'initials') => {
-    onChange({
-      ...value,
-      type: newType,
-      // Clear imageUrl if switching to initials type
-      imageUrl: newType === 'initials' ? undefined : value.imageUrl,
-    })
-  }
-
-  const displayUrl = value.type === 'image' ? value.imageUrl : undefined
 
   return (
-    <div className={cn('flex flex-col items-center gap-4', className)}>
-      <div className="relative">
-        <Avatar className="w-32 h-32">
-          {displayUrl ? (
-            <AvatarImage src={displayUrl} alt="Avatar" />
-          ) : null}
-          <AvatarFallback className="text-2xl font-bold">
-            {value.initials}
-          </AvatarFallback>
-        </Avatar>
-        
-        {isUploading && (
-          <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-white" />
-          </div>
-        )}
-      </div>
+    <div className={cn('relative group', className)}>
+      <Avatar className="w-32 h-32">
+        {value.imageUrl ? (
+          <AvatarImage src={value.imageUrl} alt={name} />
+        ) : null}
+        <AvatarFallback className="text-2xl font-bold">
+          {getInitials(name)}
+        </AvatarFallback>
+      </Avatar>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+            Upload a photo...
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleRemoveImage}>
+            Remove photo
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <div className="flex flex-col gap-4 w-full max-w-xs">
-        
-      </div>
+      {isUploading && (
+        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
@@ -210,8 +210,8 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
           </div>
           <DialogFooter className="flex flex-col gap-4 p-6 pt-4">
             <div className="flex items-center gap-4">
-              <Label htmlFor="zoom">Zoom</Label>
-              <Input
+              <label htmlFor="zoom" className="text-sm font-medium">Zoom</label>
+              <input
                 id="zoom"
                 type="range"
                 value={zoom}
@@ -223,8 +223,8 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
               />
             </div>
             <div className="flex items-center gap-4">
-              <Label htmlFor="rotation">Rotation</Label>
-              <Input
+              <label htmlFor="rotation" className="text-sm font-medium">Rotation</label>
+              <input
                 id="rotation"
                 type="range"
                 value={rotation}

@@ -20,6 +20,14 @@ interface HeroSectionProps {
   content: HeroContent
 }
 
+const getInitials = (name: string) => {
+  const [firstName, lastName] = name.split(' ')
+  if (firstName && lastName) {
+    return `${firstName[0]}${lastName[0]}`
+  }
+  return name.slice(0, 2)
+}
+
 export function HeroSection({ content }: HeroSectionProps) {
   return (
     <section
@@ -35,21 +43,34 @@ export function HeroSection({ content }: HeroSectionProps) {
           transition={{ duration: 0.8 }}
           className="text-center space-y-8"
         >
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="relative mx-auto w-32 h-32 rounded-full"
-          >
-            <Avatar className="w-full h-full">
-              {content.avatar.type === 'image' && content.avatar.imageUrl ? (
-                <AvatarImage src={content.avatar.imageUrl} alt={content.name} />
-              ) : null}
-              <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
-                {content.avatar.initials}
-              </AvatarFallback>
-            </Avatar>
-          </motion.div>
+          <div className="flex flex-col items-center space-y-4">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="relative mx-auto w-40 h-40 rounded-full"
+            >
+              <Avatar className="w-full h-full">
+                {content.avatar.imageUrl ? (
+                  <AvatarImage src={content.avatar.imageUrl} alt={content.name} />
+                ) : null}
+                <AvatarFallback className="text-5xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
+                  {getInitials(content.name)}
+                </AvatarFallback>
+              </Avatar>
+            </motion.div>
+            {content.availableForWork && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+              >
+                <Badge variant="secondary">
+                  Available for work
+                </Badge>
+              </motion.div>
+            )}
+          </div>
 
           <div className="space-y-4">
             <motion.div
@@ -57,11 +78,6 @@ export function HeroSection({ content }: HeroSectionProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
-              {content.availableForWork && (
-                <Badge variant="secondary" className="mb-4">
-                  Available for work
-                </Badge>
-              )}
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
                 {content.name.split(" ").map((word, index) => (
                   <span key={index}>
