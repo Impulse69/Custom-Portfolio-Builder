@@ -112,3 +112,12 @@
 2. remove the toggle button features from the image croper and rebuild it into a replica of the github croper
 3. put a do and undo feature
 4. when an image is removed, remove it from the databse as well.
+
+5.supporting a future "Import JSON" feature.✅done
+💡 Bonus Options (Optional Later Enhancements):
+Add README.md with deployment instructions.
+
+Include favicon, web manifest, or meta tags in the HTML.
+
+Support light/dark theme CSS toggling.
+
