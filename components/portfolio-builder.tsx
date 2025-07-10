@@ -27,6 +27,17 @@ import { ClientOnly } from "@/components/client-only"
 import { useToast } from "@/hooks/use-toast"
 import { useRef } from "react"
 
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import JSZip from "jszip";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 const LucideUser = dynamic(() => import("lucide-react").then((mod) => mod.User), { ssr: false })
 const LucideHome = dynamic(() => import("lucide-react").then((mod) => mod.Home), { ssr: false })
 const LucideFolderOpen = dynamic(() => import("lucide-react").then((mod) => mod.FolderOpen), { ssr: false })
@@ -141,6 +152,171 @@ export function PortfolioBuilder() {
     if (dialogRef.current) dialogRef.current.close()
   }
 
+  const handleExport = () => {
+    const portfolioData = {
+      version: 1,
+      content,
+      selectedSections,
+    }
+
+    const jsonString = JSON.stringify(portfolioData, null, 2)
+    const blob = new Blob([jsonString], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "my-portfolio.json"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast({
+      title: "Portfolio Exported",
+      description: "Your portfolio has been successfully downloaded as my-portfolio.json.",
+    })
+  }
+
+  const handleExportZip = async () => {
+    const zip = new JSZip();
+
+    // 1. Generate HTML
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${content.hero.name}'s Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-background text-foreground">
+    <div class="container mx-auto p-4 md:p-8">
+        ${selectedSections.map(sectionId => {
+            switch (sectionId) {
+                case 'hero':
+                    return `<section id="hero" class="text-center py-20">
+                        <h1 class="text-5xl font-bold">${content.hero.name}</h1>
+                        <p class="text-2xl mt-2">${content.hero.title}</p>
+                        <p class="mt-4">${content.hero.description}</p>
+                    </section>`;
+                case 'about':
+                    return `<section id="about" class="py-20">
+                        <h2 class="text-4xl font-bold text-center">${content.about.title}</h2>
+                        <p class="text-center mt-2">${content.about.subtitle}</p>
+                        <p class="mt-8">${content.about.description}</p>
+                    </section>`;
+                case 'projects':
+                    return `<section id="projects" class="py-20">
+                        <h2 class="text-4xl font-bold text-center">${content.projects.title}</h2>
+                        <p class="text-center mt-2">${content.projects.subtitle}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+                            ${content.projects.projects.map(p => `
+                                <div class="border rounded-lg overflow-hidden">
+                                    <img src="./assets/${p.id}.jpg" alt="${p.title}" class="w-full h-48 object-cover">
+                                    <div class="p-4">
+                                        <h3 class="font-bold">${p.title}</h3>
+                                        <p class="text-sm">${p.description}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>`;
+                case 'contact':
+                    return `<section id="contact" class="py-20 text-center">
+                        <h2 class="text-4xl font-bold">${content.contact.title}</h2>
+                        <p class="mt-2">${content.contact.subtitle}</p>
+                        <p class="mt-8">${content.contact.description}</p>
+                        <p class="mt-4">Email: ${content.contact.email}</p>
+                    </section>`;
+                default:
+                    return '';
+            }
+        }).join('')}
+    </div>
+</body>
+</html>
+    `;
+    zip.file("index.html", htmlContent);
+
+    // 2. Add Assets
+    const assets = zip.folder("assets");
+    if (content.hero.avatar.imageUrl) {
+        const response = await fetch(content.hero.avatar.imageUrl);
+        const blob = await response.blob();
+        assets.file("avatar.jpg", blob);
+    }
+
+    for (const project of content.projects.projects) {
+        if (project.image) {
+            try {
+                const response = await fetch(project.image);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    assets.file(`${project.id}.jpg`, blob);
+                } else {
+                    console.warn(`Could not fetch image for project ${project.title}: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error(`Error fetching image for project ${project.title}:`, error);
+            }
+        }
+    }
+
+    // 3. Generate and Download ZIP
+    zip.generateAsync({ type: "blob" }).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "portfolio.zip";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast({
+            title: "Portfolio ZIP Exported",
+            description: "Your portfolio has been successfully downloaded as portfolio.zip.",
+        });
+    });
+};
+
+const handleExportPdf = () => {
+    const input = document.getElementById('tour-step-3-preview');
+    if (input) {
+        html2canvas(input, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / canvasHeight;
+            const width = pdfWidth;
+            const height = width / ratio;
+
+            let position = 0;
+            let heightLeft = height;
+
+            pdf.addImage(imgData, 'PNG', 0, position, width, height);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - height;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, width, height);
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save(`${content.hero.name.toLowerCase().replace(/ /g, '-')}-portfolio.pdf`);
+
+            toast({
+                title: "Portfolio PDF Exported",
+                description: "Your portfolio has been successfully downloaded as a PDF.",
+            });
+        });
+    }
+};
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -209,10 +385,28 @@ export function PortfolioBuilder() {
                       Preview
                     </Link>
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <LucideDownload className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start">
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={handleExport}>
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export as JSON
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportZip}>
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export as ZIP
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportPdf}>
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export as PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     variant="outline"
                     size="sm"

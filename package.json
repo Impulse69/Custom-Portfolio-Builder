@@ -47,8 +47,11 @@
     "date-fns": "^3.0.0",
     "embla-carousel-react": "8.5.1",
     "framer-motion": "latest",
+    "html2canvas": "^1.4.1",
     "immer": "latest",
     "input-otp": "1.4.1",
+    "jspdf": "^3.0.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.454.0",
     "multer": "^2.0.1",
     "next": "14.2.16",
@@ -70,6 +73,7 @@
     "zustand": "latest"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.1",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
