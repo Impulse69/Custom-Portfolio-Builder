@@ -405,6 +405,28 @@ export function PortfolioBuilder() {
                       Preview
                     </Link>
                   </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start">
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={handleExport}>
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export as JSON
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportZip}>
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export as ZIP
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportPdf}>
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export as PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleExport}>
                     <LucideDownload className="h-4 w-4 mr-2" />
                     Export
