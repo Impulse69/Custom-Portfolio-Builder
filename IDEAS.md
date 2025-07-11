@@ -108,7 +108,4 @@
 
 *Last updated: [Date]*
 *Add your ideas below this line:* 
-1. when an image is removed after an upload revert back to what it was the UI was before the upload was made(Avatar initials) [attach images]
-2. remove the toggle button features from the image croper and rebuild it into a replica of the github croper
-3. put a do and undo feature
-4. when an image is removed, remove it from the databse as well.
+4. when an image is removed, should we remove it from the database as well?(research and find out if this is the norm in other giant companies i.e github, facebook, instagram)

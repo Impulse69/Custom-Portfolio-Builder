@@ -92,6 +92,16 @@ interface PortfolioStore {
   content: PortfolioContent
   selectedSections: string[]
   editingSection: string | null
+  // Undo/redo state
+  past: { content: PortfolioContent; selectedSections: string[] }[]
+  future: { content: PortfolioContent; selectedSections: string[] }[]
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
+  // Internal helpers for history
+  _setHistoryFlags: () => void
+  _saveToHistory: () => void
   updateHeroContent: (content: Partial<HeroContent>) => void
   updateAboutContent: (content: Partial<AboutContent>) => void
   updateProjectsContent: (content: Partial<ProjectsContent>) => void
@@ -238,40 +248,92 @@ export const usePortfolioStore = create<PortfolioStore>()(
       content: defaultContent,
       selectedSections: ["hero"],
       editingSection: null,
+      past: [],
+      future: [],
+      canUndo: false,
+      canRedo: false,
+      _setHistoryFlags() {
+        const { past, future } = get()
+        set({
+          canUndo: past.length > 0,
+          canRedo: future.length > 0,
+        })
+      },
+      _saveToHistory() {
+        const { content, selectedSections, past } = get()
+        set({
+          past: [...past, { content: JSON.parse(JSON.stringify(content)), selectedSections: [...selectedSections] }],
+          future: [],
+        })
+        get()._setHistoryFlags()
+      },
+      undo() {
+        const { past, future, content, selectedSections } = get()
+        if (past.length === 0) return
+        const previous = past[past.length - 1]
+        set({
+          past: past.slice(0, -1),
+          future: [{ content, selectedSections }, ...future],
+          content: previous.content,
+          selectedSections: previous.selectedSections,
+        })
+        get()._setHistoryFlags()
+      },
+      redo() {
+        const { past, future, content, selectedSections } = get()
+        if (future.length === 0) return
+        const next = future[0]
+        set({
+          past: [...past, { content, selectedSections }],
+          future: future.slice(1),
+          content: next.content,
+          selectedSections: next.selectedSections,
+        })
+        get()._setHistoryFlags()
+      },
 
-      updateHeroContent: (newContent) =>
+      updateHeroContent: (newContent) => {
+        get()._saveToHistory()
         set((state) => ({
           content: {
             ...state.content,
             hero: { ...state.content.hero, ...newContent },
           },
-        })),
+        }))
+      },
 
-      updateAboutContent: (newContent) =>
+      updateAboutContent: (newContent) => {
+        get()._saveToHistory()
         set((state) => ({
           content: {
             ...state.content,
             about: { ...state.content.about, ...newContent },
           },
-        })),
+        }))
+      },
 
-      updateProjectsContent: (newContent) =>
+      updateProjectsContent: (newContent) => {
+        get()._saveToHistory()
         set((state) => ({
           content: {
             ...state.content,
             projects: { ...state.content.projects, ...newContent },
           },
-        })),
+        }))
+      },
 
-      updateContactContent: (newContent) =>
+      updateContactContent: (newContent) => {
+        get()._saveToHistory()
         set((state) => ({
           content: {
             ...state.content,
             contact: { ...state.content.contact, ...newContent },
           },
-        })),
+        }))
+      },
 
-      addProject: (project) =>
+      addProject: (project) => {
+        get()._saveToHistory()
         set((state) => ({
           content: {
             ...state.content,
@@ -280,9 +342,11 @@ export const usePortfolioStore = create<PortfolioStore>()(
               projects: [...state.content.projects.projects, { ...project, id: Date.now().toString() }],
             },
           },
-        })),
+        }))
+      },
 
-      updateProject: (id, updatedProject) =>
+      updateProject: (id, updatedProject) => {
+        get()._saveToHistory()
         set((state) => ({
           content: {
             ...state.content,
@@ -291,9 +355,11 @@ export const usePortfolioStore = create<PortfolioStore>()(
               projects: state.content.projects.projects.map((p) => (p.id === id ? { ...p, ...updatedProject } : p)),
             },
           },
-        })),
+        }))
+      },
 
-      deleteProject: (id) =>
+      deleteProject: (id) => {
+        get()._saveToHistory()
         set((state) => ({
           content: {
             ...state.content,
@@ -302,18 +368,30 @@ export const usePortfolioStore = create<PortfolioStore>()(
               projects: state.content.projects.projects.filter((p) => p.id !== id),
             },
           },
-        })),
+        }))
+      },
 
-      setSelectedSections: (sections) => set({ selectedSections: sections }),
+      setSelectedSections: (sections) => {
+        get()._saveToHistory()
+        set({ selectedSections: sections })
+      },
 
       setEditingSection: (section) => set({ editingSection: section }),
 
-      resetToDefaults: () => set({ content: defaultContent }),
+      resetToDefaults: () => {
+        get()._saveToHistory()
+        set({ content: defaultContent, selectedSections: ["hero"] })
+      },
 
       
     }),
     {
       name: "portfolio-content",
+      partialize: (state) => ({
+        content: state.content,
+        selectedSections: state.selectedSections,
+        editingSection: state.editingSection,
+      }),
     },
   ),
 )
