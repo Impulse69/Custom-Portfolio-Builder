@@ -139,34 +139,37 @@ export function AvatarUpload({ value, onChange, name, className }: AvatarUploadP
   }
 
   return (
-    <div className={cn('relative group', className)}>
-      <Avatar className="w-32 h-32">
-        {value.imageUrl ? (
-          <AvatarImage src={value.imageUrl} alt={name} />
-        ) : null}
-        <AvatarFallback className="text-2xl font-bold">
-          {getInitials(name)}
-        </AvatarFallback>
-      </Avatar>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-            Upload a photo...
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleRemoveImage}>
-            Remove photo
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <div className={cn('relative flex flex-col items-center justify-center', className)}>
+      <div className="relative w-32 h-32 flex items-center justify-center">
+        <Avatar className="w-32 h-32">
+          {value.imageUrl ? (
+            <AvatarImage src={value.imageUrl} alt={name} />
+          ) : null}
+          <AvatarFallback className="text-2xl font-bold">
+            {getInitials(name)}
+          </AvatarFallback>
+        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 shadow-md"
+              size="icon"
+              aria-label="Edit avatar"
+            >
+              <Edit className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              Upload a photo...
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleRemoveImage}>
+              Remove photo
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {isUploading && (
         <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">

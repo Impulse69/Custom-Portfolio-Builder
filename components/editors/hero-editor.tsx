@@ -91,8 +91,8 @@ export function HeroEditor() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="avatar">Avatar</Label>
+          <div className="space-y-2 flex flex-col items-center justify-center text-center">
+            <Label htmlFor="avatar" className="text-center w-full">Avatar</Label>
             <AvatarUpload
               value={formData.avatar}
               onChange={(value) => handleAvatarChange(value)}
