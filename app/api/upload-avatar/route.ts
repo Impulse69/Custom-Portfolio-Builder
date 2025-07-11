@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Load from .env.local
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseBucket = process.env.SUPABASE_AVATAR_BUCKET || 'avatars';
+const supabaseUrl = 'https://ntqtginlrtwwhexyaqxp.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cXRnaW5scnR3d2hleHlhcXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxNTAxMTMsImV4cCI6MjA2NTcyNjExM30.1oTJ6MP9xgj35Ba64BcaZxjO61NPn4TRq_oY-4S24fU';
+const supabaseBucket = 'avatars';
 
 // Only create client if environment variables are available
 const supabase = supabaseUrl && supabaseAnonKey 
