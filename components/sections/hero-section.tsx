@@ -48,13 +48,13 @@ export function HeroSection({ content }: HeroSectionProps) {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="relative mx-auto w-40 h-40 rounded-full"
+              className="relative mx-auto w-48 h-48 rounded-full"
             >
               <Avatar className="w-full h-full">
                 {content.avatar.imageUrl ? (
                   <AvatarImage src={content.avatar.imageUrl} alt={content.name} />
                 ) : null}
-                <AvatarFallback className="text-5xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
+                <AvatarFallback className="text-6xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
                   {getInitials(content.name)}
                 </AvatarFallback>
               </Avatar>

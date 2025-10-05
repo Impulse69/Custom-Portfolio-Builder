@@ -73,7 +73,6 @@ export function AvatarUpload({ value, onChange, name, className }: AvatarUploadP
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
-  const [rotation, setRotation] = useState(0)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
@@ -188,56 +187,31 @@ export function AvatarUpload({ value, onChange, name, className }: AvatarUploadP
       <Dialog open={!!imageSrc} onOpenChange={() => setImageSrc(null)}>
         <DialogContent className="sm:max-w-[425px] h-[500px] flex flex-col p-0">
           <DialogHeader className="p-6 pb-4">
-            <DialogTitle>Crop Image</DialogTitle>
+            <DialogTitle>Set new profile picture</DialogTitle>
           </DialogHeader>
-          <div className="relative flex-1 bg-gray-900">
+          <div className="relative flex-1 bg-gray-50 dark:bg-gray-900">
             <Cropper
               image={imageSrc || ''}
               crop={crop}
               zoom={zoom}
-              rotation={rotation}
               aspect={1 / 1}
               onCropChange={setCrop}
               onZoomChange={setZoom}
-              onRotationChange={setRotation}
               onCropComplete={onCropComplete}
               cropShape="round"
               showGrid={false}
               restrictPosition={false}
               classes={{
-                containerClassName: 'bg-transparent',
+                containerClassName: 'bg-gray-50 dark:bg-gray-900',
                 mediaClassName: 'object-contain',
-                cropAreaClassName: 'rounded-full border-2 border-primary',
+                cropAreaClassName: 'rounded-full border-2 border-white shadow-lg',
               }}
             />
           </div>
-          <DialogFooter className="flex flex-col gap-4 p-6 pt-4">
-            <div className="flex items-center gap-4">
-              <label htmlFor="zoom" className="text-sm font-medium">Zoom</label>
-              <input
-                id="zoom"
-                type="range"
-                value={zoom}
-                min={1}
-                max={3}
-                step={0.1}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <label htmlFor="rotation" className="text-sm font-medium">Rotation</label>
-              <input
-                id="rotation"
-                type="range"
-                value={rotation}
-                min={0}
-                max={360}
-                step={1}
-                onChange={(e) => setRotation(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
+          <DialogFooter className="flex justify-end gap-3 p-6 pt-4">
+            <Button variant="outline" onClick={() => setImageSrc(null)}>
+              Cancel
+            </Button>
             <Button onClick={handleSaveCroppedImage} disabled={isUploading}>
               {isUploading ? (
                 <>
@@ -245,7 +219,7 @@ export function AvatarUpload({ value, onChange, name, className }: AvatarUploadP
                   Saving...
                 </>
               ) : (
-                'Save Cropped Image'
+                'Set new profile picture'
               )}
             </Button>
           </DialogFooter>

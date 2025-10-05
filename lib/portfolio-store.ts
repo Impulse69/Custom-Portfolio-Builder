@@ -297,7 +297,14 @@ export const usePortfolioStore = create<PortfolioStore>()(
         set((state) => ({
           content: {
             ...state.content,
-            hero: { ...state.content.hero, ...newContent },
+            hero: {
+              ...state.content.hero,
+              ...newContent,
+              avatar: {
+                ...state.content.hero.avatar,
+                ...(newContent.avatar ?? {}),
+              },
+            },
           },
         }))
       },
