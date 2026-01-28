@@ -36,44 +36,44 @@ A web-based, no-code portfolio builder built with **React**, **Next.js**, **Type
 
 1. **Clone the repository**
 
-```bash
+\`\`\`bash
 git clone https://github.com/Impulse69/Custom-Portfolio-Builder.git
 cd portfolio-builder
-```
+\`\`\`
 
 2. **Install dependencies**
 
-```bash
+\`\`\`bash
 pnpm install
-```
+\`\`\`
 
 3. **Set up environment variables** (optional for avatar uploads)
 
 Create a `.env.local` file in the root directory:
 
-```env
+\`\`\`env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_AVATAR_BUCKET=avatars
-```
+\`\`\`
 
 4. **Run the development server**
 
-```bash
+\`\`\`bash
 pnpm run dev
-```
+\`\`\`
 
 5. **Build for production**
 
-```bash
+\`\`\`bash
 pnpm run build
-```
+\`\`\`
 
 ---
 
 ## 📁 Folder Structure
 
-```
+\`\`\`
 /app                 -> Next.js 13+ app directory
   /api               -> API routes (upload-avatar)
   /globals.css       -> Global styles and Tailwind config
@@ -89,7 +89,7 @@ pnpm run build
   /utils.ts          -> Utility functions
 /types               -> TypeScript type definitions
 /public              -> Static assets
-```
+\`\`\`
 
 ---
 

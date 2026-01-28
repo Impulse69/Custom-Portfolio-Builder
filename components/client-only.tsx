@@ -18,4 +18,4 @@ export function ClientOnly({ children }: ClientOnlyProps) {
   }
 
   return <>{children}</>
-} 
+}
