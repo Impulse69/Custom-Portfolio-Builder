@@ -93,8 +93,9 @@ interface PortfolioStore {
   selectedSections: string[]
   editingSection: string | null
   // Undo/redo state
-  past: { content: PortfolioContent; selectedSections: string[] }[]
-  future: { content: PortfolioContent; selectedSections: string[] }[]
+  themeColor: string
+  past: { content: PortfolioContent; selectedSections: string[]; themeColor: string }[]
+  future: { content: PortfolioContent; selectedSections: string[]; themeColor: string }[]
   undo: () => void
   redo: () => void
   canUndo: boolean
@@ -111,6 +112,7 @@ interface PortfolioStore {
   deleteProject: (id: string) => void
   setSelectedSections: (sections: string[]) => void
   setEditingSection: (section: string | null) => void
+  setThemeColor: (color: string) => void
   resetToDefaults: () => void
 }
 
@@ -248,6 +250,7 @@ export const usePortfolioStore = create<PortfolioStore>()(
       content: defaultContent,
       selectedSections: ["hero"],
       editingSection: null,
+      themeColor: "blue",
       past: [],
       future: [],
       canUndo: false,
@@ -260,34 +263,36 @@ export const usePortfolioStore = create<PortfolioStore>()(
         })
       },
       _saveToHistory() {
-        const { content, selectedSections, past } = get()
+        const { content, selectedSections, themeColor, past } = get()
         set({
-          past: [...past, { content: JSON.parse(JSON.stringify(content)), selectedSections: [...selectedSections] }],
+          past: [...past, { content: JSON.parse(JSON.stringify(content)), selectedSections: [...selectedSections], themeColor }],
           future: [],
         })
         get()._setHistoryFlags()
       },
       undo() {
-        const { past, future, content, selectedSections } = get()
+        const { past, future, content, selectedSections, themeColor } = get()
         if (past.length === 0) return
         const previous = past[past.length - 1]
         set({
           past: past.slice(0, -1),
-          future: [{ content, selectedSections }, ...future],
+          future: [{ content, selectedSections, themeColor }, ...future],
           content: previous.content,
           selectedSections: previous.selectedSections,
+          themeColor: previous.themeColor,
         })
         get()._setHistoryFlags()
       },
       redo() {
-        const { past, future, content, selectedSections } = get()
+        const { past, future, content, selectedSections, themeColor } = get()
         if (future.length === 0) return
         const next = future[0]
         set({
-          past: [...past, { content, selectedSections }],
+          past: [...past, { content, selectedSections, themeColor }],
           future: future.slice(1),
           content: next.content,
           selectedSections: next.selectedSections,
+          themeColor: next.themeColor,
         })
         get()._setHistoryFlags()
       },
@@ -385,12 +390,17 @@ export const usePortfolioStore = create<PortfolioStore>()(
 
       setEditingSection: (section) => set({ editingSection: section }),
 
-      resetToDefaults: () => {
+      setThemeColor: (color) => {
         get()._saveToHistory()
-        set({ content: defaultContent, selectedSections: ["hero"] })
+        set({ themeColor: color })
       },
 
-      
+      resetToDefaults: () => {
+        get()._saveToHistory()
+        set({ content: defaultContent, selectedSections: ["hero"], themeColor: "blue" })
+      },
+
+
     }),
     {
       name: "portfolio-content",
@@ -398,6 +408,7 @@ export const usePortfolioStore = create<PortfolioStore>()(
         content: state.content,
         selectedSections: state.selectedSections,
         editingSection: state.editingSection,
+        themeColor: state.themeColor,
       }),
     },
   ),

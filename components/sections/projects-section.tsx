@@ -40,7 +40,7 @@ export function ProjectsSection({ content }: ProjectsSectionProps) {
               )
             })}
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">{content.description}</p>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto line-clamp-3">{content.description}</p>
         </motion.div>
 
         {/* Featured Projects */}
@@ -80,7 +80,7 @@ export function ProjectsSection({ content }: ProjectsSectionProps) {
                   </div>
                   <CardContent className="p-6">
                     <h3 className="text-xl font-bold mb-2">{project.title}</h3>
-                    <p className="text-muted-foreground mb-4">{project.description}</p>
+                    <p className="text-muted-foreground mb-4 line-clamp-3">{project.description}</p>
                     <div className="flex flex-wrap gap-2">
                       {project.tags.map((tag) => (
                         <Badge key={tag} variant="secondary" className="text-xs">

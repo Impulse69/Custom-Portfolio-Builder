@@ -111,7 +111,7 @@ export function ContactSection({ content }: ContactSectionProps) {
               )
             })}
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">{content.description}</p>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto line-clamp-3">{content.description}</p>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-12">

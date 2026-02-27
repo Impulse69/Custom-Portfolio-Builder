@@ -45,7 +45,7 @@ export function AboutSection({ content }: AboutSectionProps) {
               )
             })}
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">{content.description}</p>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed line-clamp-4">{content.description}</p>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-12 mb-16">
@@ -74,17 +74,17 @@ export function AboutSection({ content }: AboutSectionProps) {
               {content.skills.map((skill, index) => {
                 const Icon =
                   iconMap[
-                    skill.name.includes("React") || skill.name.includes("TypeScript")
-                      ? "Code"
-                      : skill.name.includes("Design")
-                        ? "Palette"
-                        : skill.name.includes("Mobile")
-                          ? "Smartphone"
-                          : skill.name.includes("Node")
-                            ? "Database"
-                            : skill.name.includes("DevOps")
-                              ? "Globe"
-                              : "Code"
+                  skill.name.includes("React") || skill.name.includes("TypeScript")
+                    ? "Code"
+                    : skill.name.includes("Design")
+                      ? "Palette"
+                      : skill.name.includes("Mobile")
+                        ? "Smartphone"
+                        : skill.name.includes("Node")
+                          ? "Database"
+                          : skill.name.includes("DevOps")
+                            ? "Globe"
+                            : "Code"
                   ]
                 return (
                   <motion.div

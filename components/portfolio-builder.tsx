@@ -171,7 +171,7 @@ const importSchema = z.object({
 })
 
 export function PortfolioBuilder() {
-  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, resetToDefaults, undo, redo, canUndo, canRedo } = usePortfolioStore()
+  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, themeColor, setThemeColor, resetToDefaults, undo, redo, canUndo, canRedo } = usePortfolioStore()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
   const dialogRef = useRef<HTMLDialogElement | null>(null)
@@ -181,6 +181,7 @@ export function PortfolioBuilder() {
   const [isExportingPdf, setIsExportingPdf] = React.useState(false)
   const [isExportingStatic, setIsExportingStatic] = React.useState(false)
   const [isExportingJson, setIsExportingJson] = React.useState(false)
+  const [isExportingPptx, setIsExportingPptx] = React.useState(false)
   const previewRef = useRef<HTMLDivElement | null>(null)
 
   const toggleSection = (sectionId: SectionType) => {
@@ -306,8 +307,11 @@ export function PortfolioBuilder() {
         }, 0)
         // Set theme
         if (parsed.data.theme) setTheme(parsed.data.theme)
+        if ((parsed.data.content as any).themeColor) {
+          setThemeColor((parsed.data.content as any).themeColor)
+        }
         // Persist to localStorage
-        localStorage.setItem("portfolio-content", JSON.stringify({ state: { content: parsed.data.content, selectedSections: parsed.data.selectedSections } }))
+        localStorage.setItem("portfolio-content", JSON.stringify({ state: { content: parsed.data.content, selectedSections: parsed.data.selectedSections, themeColor: (parsed.data.content as any).themeColor || "blue" } }))
         toast({ title: "Portfolio restored", description: "Portfolio restored from import successfully." })
       } catch (err) {
         toast({ title: "Import failed", description: "Could not parse JSON file.", variant: "destructive" })
@@ -356,10 +360,49 @@ export function PortfolioBuilder() {
     })
   }
 
+  // Export as PPTX
+  async function handleExportPptx() {
+    setIsExportingPptx(true)
+    try {
+      const moduleName = "pptxgenjs"
+      const pptxModule = await import(/* webpackIgnore: true */ moduleName)
+      const PptxGenJS = pptxModule.default || pptxModule
+      const pres = new PptxGenJS()
+      pres.layout = "LAYOUT_16x9"
+
+      // Allow DOM to settle
+      await new Promise(r => setTimeout(r, 500))
+
+      for (const sectionId of selectedSections) {
+        const node = document.getElementById(`section-${sectionId}`)
+        if (!node) continue
+
+        const canvas = await html2canvas(node as HTMLElement, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: theme === "dark" ? "#0a0a0a" : "#ffffff",
+        })
+        const imgData = canvas.toDataURL("image/jpeg", 0.95)
+
+        const slide = pres.addSlide()
+        slide.addImage({ data: imgData, x: 0, y: 0, w: "100%", h: "100%" })
+      }
+
+      const userName = content.hero?.name?.toLowerCase().replace(/\s+/g, "-") || "portfolio"
+      await pres.writeFile({ fileName: `${userName}-portfolio.pptx` })
+      toast({ title: "PPTX exported", description: "Your presentation has been downloaded." })
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Export failed", description: "Failed to generate PPTX.", variant: "destructive" })
+    } finally {
+      setIsExportingPptx(false)
+    }
+  }
+
   // Export as static site
   function handleExportStatic() {
     setIsExportingStatic(true)
-    
+
     try {
       // Get the preview container
       const previewNode = document.querySelector("#tour-step-3-preview > div") as HTMLElement
@@ -371,25 +414,25 @@ export function PortfolioBuilder() {
 
       // Create a new zip instance
       const zip = new JSZip()
-      
+
       // Generate HTML content
       const htmlContent = generateStaticHTML(previewNode)
-      
+
       // Generate CSS content
       const cssContent = generateStaticCSS()
-      
+
       // Generate JavaScript content
       const jsContent = generateStaticJS()
-      
+
       // Add files to zip
       zip.file("index.html", htmlContent)
       zip.file("styles.css", cssContent)
       zip.file("script.js", jsContent)
-      
+
       // Add README
       const readmeContent = generateReadme()
       zip.file("README.md", readmeContent)
-      
+
       // Generate and download zip
       zip.generateAsync({ type: "blob" }).then((zipContent) => {
         const url = URL.createObjectURL(zipContent)
@@ -400,10 +443,10 @@ export function PortfolioBuilder() {
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-        
-        toast({ 
-          title: "Static site exported", 
-          description: "Your portfolio has been exported as a static site. Extract the ZIP file and upload to any web hosting service." 
+
+        toast({
+          title: "Static site exported",
+          description: "Your portfolio has been exported as a static site. Extract the ZIP file and upload to any web hosting service."
         })
         setIsExportingStatic(false)
       }).catch((error) => {
@@ -411,7 +454,7 @@ export function PortfolioBuilder() {
         toast({ title: "Export failed", description: "Failed to generate static site." })
         setIsExportingStatic(false)
       })
-      
+
     } catch (error) {
       console.error("Export error:", error)
       toast({ title: "Export failed", description: "An error occurred during export." })
@@ -423,7 +466,7 @@ export function PortfolioBuilder() {
   function generateStaticHTML(previewNode: HTMLElement) {
     const userName = content.hero?.name || "Portfolio"
     const userTitle = content.hero?.title || "Professional"
-    
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -783,7 +826,7 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
   // Export as JSON
   function handleExportJson() {
     setIsExportingJson(true)
-    
+
     try {
       // Create export data
       const exportData = {
@@ -796,10 +839,10 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
           tool: "Portfolio Builder"
         }
       }
-      
+
       // Convert to JSON string
       const jsonString = JSON.stringify(exportData, null, 2)
-      
+
       // Create and download file
       const blob = new Blob([jsonString], { type: "application/json" })
       const url = URL.createObjectURL(blob)
@@ -810,13 +853,13 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      
-      toast({ 
-        title: "JSON exported", 
-        description: "Your portfolio data has been exported as JSON. You can import this file later to restore your portfolio." 
+
+      toast({
+        title: "JSON exported",
+        description: "Your portfolio data has been exported as JSON. You can import this file later to restore your portfolio."
       })
       setIsExportingJson(false)
-      
+
     } catch (error) {
       console.error("JSON export error:", error)
       toast({ title: "Export failed", description: "Failed to export portfolio data." })
@@ -824,9 +867,18 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
     }
   }
 
+  const colorSwatches = [
+    { name: "Blue", value: "blue", class: "bg-blue-500" },
+    { name: "Violet", value: "violet", class: "bg-violet-500" },
+    { name: "Rose", value: "rose", class: "bg-rose-500" },
+    { name: "Orange", value: "orange", class: "bg-orange-500" },
+    { name: "Green", value: "green", class: "bg-emerald-500" },
+    { name: "Zinc", value: "zinc", class: "bg-zinc-500" },
+  ]
+
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className={`flex min-h-screen w-full theme-${themeColor}`}>
         <Sidebar className="border-r">
           <SidebarHeader className="border-b p-4">
             <div className="flex items-center gap-2">
@@ -904,6 +956,10 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
                       <DropdownMenuItem onClick={handleExportPdf} disabled={isExportingPdf}>
                         <LucideFileText className="h-4 w-4 mr-2" />
                         {isExportingPdf ? "Exporting PDF..." : "Export as PDF"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportPptx} disabled={isExportingPptx}>
+                        <LucideFileText className="h-4 w-4 mr-2" />
+                        {isExportingPptx ? "Exporting PPTX..." : "Export as PPTX"}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleExportStatic} disabled={isExportingStatic}>
                         <LucideGlobe className="h-4 w-4 mr-2" />
@@ -995,18 +1051,43 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
               <Separator />
 
               <div>
-                <h3 className="mb-2 text-sm font-medium text-muted-foreground">THEME</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="w-full justify-start"
-                >
-                  <ClientOnly>
-                    {theme === "dark" ? <LucideSun className="h-4 w-4 mr-2" /> : <LucideMoon className="h-4 w-4 mr-2" />}
-                    {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                  </ClientOnly>
-                </Button>
+                <h3 className="mb-2 text-sm font-medium text-muted-foreground">THEME SETTINGS</h3>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Button
+                      variant={theme === "light" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTheme("light")}
+                      className="flex-1"
+                    >
+                      <LucideSun className="h-4 w-4 mr-2" />
+                      Light
+                    </Button>
+                    <Button
+                      variant={theme === "dark" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTheme("dark")}
+                      className="flex-1"
+                    >
+                      <LucideMoon className="h-4 w-4 mr-2" />
+                      Dark
+                    </Button>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground mb-2 block">Accent Color</span>
+                    <div className="flex flex-wrap gap-2">
+                      {colorSwatches.map((swatch) => (
+                        <button
+                          key={swatch.value}
+                          onClick={() => setThemeColor(swatch.value)}
+                          title={swatch.name}
+                          className={`w-6 h-6 rounded-full shadow-sm border-2 transition-all ${themeColor === swatch.value ? "border-foreground scale-110" : "border-transparent hover:scale-105"
+                            } ${swatch.class}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </SidebarContent>
@@ -1033,27 +1114,74 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
 
           <main className="flex-1 overflow-y-auto p-4 md:p-8" id="tour-step-3-preview">
             <div className="mx-auto max-w-5xl space-y-8">
-                {selectedSections.length === 0 ? (
+              {selectedSections.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted bg-muted/20 p-12 text-center min-h-[calc(100vh-4rem)]">
-                    <div className="text-center">
-                      <LucidePalette className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <div className="text-center">
+                    <LucidePalette className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h2 className="text-2xl font-bold mb-2">Your Portfolio is Empty</h2>
                     <p className="text-muted-foreground">
                       Select a section from the left sidebar to start building your portfolio.
-                      </p>
-                    </div>
+                    </p>
+                  </div>
                 </div>
-                ) : (
-                  <motion.div
+              ) : (
+                <motion.div
                   key={selectedSections.join("-")}
                   initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                  animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="space-y-8"
-                      >
-                  {selectedSections.map((sectionId) => renderSection(sectionId as SectionType))}
-                  </motion.div>
-                )}
+                  className="space-y-12 pb-12"
+                >
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
+                      .gamma-card section {
+                        min-height: 100% !important;
+                        height: 100% !important;
+                        padding-top: 4rem !important;
+                        padding-bottom: 4rem !important;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                      }
+                      .gamma-card .container {
+                        max-width: 1200px !important;
+                        width: 100% !important;
+                        margin: 0 auto;
+                        padding: 0 4rem !important;
+                      }
+                      .preview-scaler {
+                        width: 1440px;
+                        height: 810px;
+                        transform-origin: top left;
+                        transform: scale(calc(100% / 1440));
+                      }
+                    `}} />
+                  {selectedSections.map((sectionId) => (
+                    <div
+                      key={sectionId}
+                      id={`section-${sectionId}`}
+                      className="gamma-card group relative aspect-[16/9] w-full overflow-hidden rounded-2xl border bg-background shadow-xl ring-1 ring-border/50 cursor-pointer transition-all hover:ring-2 hover:ring-primary"
+                      onClick={() => setEditingSection(sectionId as SectionType)}
+                    >
+                      <div className="absolute inset-0 bg-background overflow-hidden" ref={(el) => {
+                        // Dynamic scaling based on parent width
+                        if (el && el.parentElement) {
+                          const parentWidth = el.parentElement.clientWidth;
+                          const scale = parentWidth / 1440;
+                          const scaler = el.querySelector('.preview-scaler') as HTMLElement;
+                          if (scaler) {
+                            scaler.style.transform = `scale(${scale})`;
+                          }
+                        }
+                      }}>
+                        <div className="preview-scaler max-w-none flex flex-col bg-background">
+                          {renderSection(sectionId as SectionType)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
             </div>
           </main>
         </SidebarInset>
@@ -1074,6 +1202,6 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
           </SidebarInset>
         </div>
       </div>
-    </SidebarProvider>
+    </SidebarProvider >
   )
 }

@@ -78,7 +78,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight line-clamp-2">
                 {content.name.split(" ").map((word, index) => (
                   <span key={index}>
                     {index === 0 ? word : <span className="text-primary">{word}</span>}
@@ -86,7 +86,7 @@ export function HeroSection({ content }: HeroSectionProps) {
                   </span>
                 ))}
               </h1>
-              <p className="text-2xl md:text-3xl font-semibold text-muted-foreground mt-2">
+              <p className="text-2xl md:text-3xl font-semibold text-muted-foreground mt-2 line-clamp-2">
                 {content.title} {content.subtitle && `& ${content.subtitle}`}
               </p>
             </motion.div>
@@ -95,7 +95,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.6 }}
-              className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+              className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed line-clamp-3"
             >
               {content.description}
             </motion.p>
@@ -128,11 +128,11 @@ export function HeroSection({ content }: HeroSectionProps) {
             className="flex justify-center gap-6 pt-8"
           >
             {[
-              content.socialLinks.githubEnabled && { icon: LucideGithub, href: content.socialLinks.github, label: "GitHub" },
-              content.socialLinks.linkedinEnabled && { icon: LucideLinkedin, href: content.socialLinks.linkedin, label: "LinkedIn" },
-              content.socialLinks.emailEnabled && { icon: LucideMail, href: `mailto:${content.socialLinks.email}`, label: "Email" },
-              content.socialLinks.twitterEnabled && content.socialLinks.twitter && { icon: LucideTwitter, href: content.socialLinks.twitter, label: "Twitter" },
-            ].filter((item): item is { icon: React.ComponentType<any>, href: string, label: string } => item !== false && item !== null && item !== undefined).map(({ icon: Icon, href, label }) => (
+              content.socialLinks.githubEnabled ? { icon: LucideGithub, href: content.socialLinks.github, label: "GitHub" } : null,
+              content.socialLinks.linkedinEnabled ? { icon: LucideLinkedin, href: content.socialLinks.linkedin, label: "LinkedIn" } : null,
+              content.socialLinks.emailEnabled ? { icon: LucideMail, href: `mailto:${content.socialLinks.email}`, label: "Email" } : null,
+              content.socialLinks.twitterEnabled && content.socialLinks.twitter ? { icon: LucideTwitter, href: content.socialLinks.twitter, label: "Twitter" } : null,
+            ].filter((item): item is { icon: React.ComponentType<any>, href: string, label: string } => item !== null).map(({ icon: Icon, href, label }) => (
               <Button
                 key={label}
                 variant="ghost"
