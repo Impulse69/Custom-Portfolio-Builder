@@ -1,4 +1,4 @@
-export type SectionType = "hero" | "about" | "projects" | "contact"
+export type SectionType = "hero" | "about" | "services" | "projects" | "contact"
 
 export interface Project {
   id: number

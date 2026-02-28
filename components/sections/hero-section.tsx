@@ -32,29 +32,29 @@ export function HeroSection({ content }: HeroSectionProps) {
   return (
     <section
       id="hero"
-      className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 scroll-mt-16"
+      className="relative w-full h-full flex flex-col justify-center items-center bg-gradient-to-br from-background via-background to-muted/20 scroll-mt-16 overflow-hidden py-4"
     >
       <div className="absolute inset-0 bg-grid-pattern opacity-5" />
 
-      <div className="container px-4 py-16 mx-auto max-w-6xl relative z-10">
+      <div className="container px-4 mx-auto max-w-4xl relative z-10 flex flex-col h-full justify-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center space-y-8"
+          className="text-center space-y-2"
         >
-          <div className="flex flex-col items-center space-y-4">
+          <div className="flex flex-col items-center space-y-2">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="relative mx-auto w-48 h-48 rounded-full"
+              className="relative flex justify-center items-center rounded-full"
             >
-              <Avatar className="w-full h-full">
+              <Avatar className="w-16 h-16 sm:w-20 sm:h-20 shadow-md">
                 {content.avatar.imageUrl ? (
-                  <AvatarImage src={content.avatar.imageUrl} alt={content.name} />
+                  <AvatarImage src={content.avatar.imageUrl} alt={content.name} className="object-cover" />
                 ) : null}
-                <AvatarFallback className="text-6xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
+                <AvatarFallback className="text-xl sm:text-2xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
                   {getInitials(content.name)}
                 </AvatarFallback>
               </Avatar>
@@ -65,20 +65,20 @@ export function HeroSection({ content }: HeroSectionProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6 }}
               >
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="text-[10px] py-0 h-4">
                   Available for work
                 </Badge>
               </motion.div>
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-1">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight line-clamp-2">
+              <h1 className="text-lg sm:text-2xl md:text-3xl font-bold tracking-tight line-clamp-1">
                 {content.name.split(" ").map((word, index) => (
                   <span key={index}>
                     {index === 0 ? word : <span className="text-primary">{word}</span>}
@@ -86,7 +86,7 @@ export function HeroSection({ content }: HeroSectionProps) {
                   </span>
                 ))}
               </h1>
-              <p className="text-2xl md:text-3xl font-semibold text-muted-foreground mt-2 line-clamp-2">
+              <p className="text-xs sm:text-sm md:text-base font-semibold text-muted-foreground line-clamp-1">
                 {content.title} {content.subtitle && `& ${content.subtitle}`}
               </p>
             </motion.div>
@@ -95,7 +95,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.6 }}
-              className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed line-clamp-3"
+              className="text-[10px] sm:text-xs md:text-sm text-muted-foreground max-w-xl mx-auto leading-snug line-clamp-2"
             >
               {content.description}
             </motion.p>
@@ -105,17 +105,17 @@ export function HeroSection({ content }: HeroSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-row gap-2 sm:gap-4 justify-center items-center"
           >
             {content.ctaPrimaryEnabled && (
-              <Button size="lg" className="group">
+              <Button size="sm" className="group text-[10px] sm:text-xs h-6 sm:h-8 px-2">
                 {content.ctaPrimary}
-                <LucideArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <LucideArrowRight className="ml-1 sm:ml-2 h-3 w-3 transition-transform group-hover:translate-x-1" />
               </Button>
             )}
             {content.ctaSecondaryEnabled && (
-              <Button variant="outline" size="lg">
-                <LucideDownload className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="text-[10px] sm:text-xs h-6 sm:h-8 px-2">
+                <LucideDownload className="mr-1 sm:mr-2 h-3 w-3" />
                 {content.ctaSecondary}
               </Button>
             )}
@@ -125,7 +125,7 @@ export function HeroSection({ content }: HeroSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.6 }}
-            className="flex justify-center gap-6 pt-8"
+            className="flex justify-center gap-2 sm:gap-4 pt-2"
           >
             {[
               content.socialLinks.githubEnabled ? { icon: LucideGithub, href: content.socialLinks.github, label: "GitHub" } : null,
@@ -137,11 +137,11 @@ export function HeroSection({ content }: HeroSectionProps) {
                 key={label}
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
+                className="h-6 w-6 sm:h-8 sm:w-8 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
                 asChild
               >
                 <a href={href} aria-label={label} target="_blank" rel="noopener noreferrer">
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                 </a>
               </Button>
             ))}

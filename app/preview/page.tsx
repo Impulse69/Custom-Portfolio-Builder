@@ -7,12 +7,13 @@ import { HeroSection } from "@/components/sections/hero-section"
 import { AboutSection } from "@/components/sections/about-section"
 import { ProjectsSection } from "@/components/sections/projects-section"
 import { ContactSection } from "@/components/sections/contact-section"
+import { ServicesSection } from "@/components/sections/services-section"
 import { ThemeProvider } from "@/components/theme-provider"
 import { usePortfolioStore } from "@/lib/portfolio-store"
 import type { SectionType } from "@/types/portfolio"
 
 export default function PreviewPage() {
-  const { selectedSections, content } = usePortfolioStore()
+  const { selectedSections, content, themeColor, previewMode } = usePortfolioStore()
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -29,6 +30,8 @@ export default function PreviewPage() {
         return <ProjectsSection key="projects" content={content.projects} />
       case "contact":
         return <ContactSection key="contact" content={content.contact} />
+      case "services":
+        return <ServicesSection key="services" content={content.services} />
       default:
         return null
     }
@@ -46,39 +49,45 @@ export default function PreviewPage() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <div className="min-h-screen bg-background">
+      <div className={`min-h-screen bg-background theme-${themeColor}`}>
         <PreviewNavigation sections={selectedSections as SectionType[]} />
 
-        <main className="relative">
-          {selectedSections.length === 0 ? (
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold mb-4">No Sections Selected</h1>
-                <p className="text-muted-foreground mb-6">
-                  Go back to the builder to select sections for your portfolio.
-                </p>
-                <a
-                  href="/"
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                >
-                  Back to Builder
-                </a>
+        <main className="relative pt-24 pb-24 flex justify-center">
+          <div className={`w-full transition-all duration-300 ${
+            previewMode === "mobile" ? "max-w-[375px]" :
+            previewMode === "tablet" ? "max-w-[768px]" :
+            "max-w-[1400px]"
+          }`}>
+            {selectedSections.length === 0 ? (
+              <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold mb-4">No Sections Selected</h1>
+                  <p className="text-muted-foreground mb-6">
+                    Go back to the builder to select sections for your portfolio.
+                  </p>
+                  <a
+                    href="/"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                  >
+                    Back to Builder
+                  </a>
+                </div>
               </div>
-            </div>
-          ) : (
-            selectedSections.map((sectionId, index) => (
-              <motion.div
-                key={sectionId}
-                id={sectionId}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
-                className="scroll-mt-20"
-              >
-                {renderSection(sectionId as SectionType)}
-              </motion.div>
-            ))
-          )}
+            ) : (
+              selectedSections.map((sectionId, index) => (
+                <motion.div
+                  key={sectionId}
+                  id={sectionId}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.6 }}
+                  className="scroll-mt-20"
+                >
+                  {renderSection(sectionId as SectionType)}
+                </motion.div>
+              ))
+            )}
+          </div>
         </main>
       </div>
     </ThemeProvider>

@@ -52,6 +52,7 @@ export function ContactEditor() {
               value={formData.title}
               onChange={(e) => handleChange("title", e.target.value)}
               placeholder="Get In Touch"
+              maxLength={20}
             />
           </div>
 
@@ -62,6 +63,7 @@ export function ContactEditor() {
               value={formData.subtitle}
               onChange={(e) => handleChange("subtitle", e.target.value)}
               placeholder="Let's Work Together"
+              maxLength={30}
             />
           </div>
 
@@ -73,6 +75,7 @@ export function ContactEditor() {
               onChange={(e) => handleChange("description", e.target.value)}
               placeholder="Brief overview of how to contact you..."
               rows={3}
+              maxLength={120}
             />
           </div>
         </CardContent>
@@ -128,6 +131,7 @@ export function ContactEditor() {
               value={formData.location}
               onChange={(e) => handleChange("location", e.target.value)}
               placeholder="San Francisco, CA"
+              maxLength={30}
             />
             <div className="flex items-center space-x-2 mt-2">
               <Switch

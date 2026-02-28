@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3001",
+  "executionArgs": {
+    "projectName": "portfolio-builder",
+    "projectPath": "c:\\Users\\ISAAC\\Downloads\\portfolio-builder",
+    "testIds": [],
+    "additionalInstruction": "",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-xz2UcHT3WAVUGQhERKWRtlcFpNDVAp8acEg0xr71VTbL7vZxGRsdokHuZ_0FS9h8BWQ_1L2hlb5p_Z-dauCiFkJsuJ_WH1aZno96fByDws9T18RZOSutqzhe70_P4FNBQOY"
+    }
+  },
+  "serverPort": 57507,
+  "proxy": "http://a2ac2947-b460-450c-bc4a-288fd86227a3:Warb8g2hxabOOPHCe0IjRqfzP1eH7ebq@tun.testsprite.com:8080"
+}

@@ -26,16 +26,30 @@ export interface HeroContent {
   }
 }
 
+export interface JourneyItem {
+  id: string
+  role: string
+  company: string
+  period: string
+  description: string
+}
+
 export interface AboutContent {
   title: string
   subtitle: string
   description: string
-  journey: string[]
+  journeyItems: JourneyItem[]
   skills: Array<{
     name: string
     level: number
     category: string
   }>
+}
+
+export interface ServicesContent {
+  title: string
+  subtitle: string
+  description: string
   services: Array<{
     title: string
     description: string
@@ -58,6 +72,7 @@ export interface ProjectsContent {
   title: string
   subtitle: string
   description: string
+  layout: "grid" | "list"
   projects: Project[]
 }
 
@@ -86,6 +101,16 @@ export interface PortfolioContent {
   about: AboutContent
   projects: ProjectsContent
   contact: ContactContent
+  services: ServicesContent
+}
+
+export interface SavedVersion {
+  id: string
+  name: string
+  date: string
+  content: PortfolioContent
+  selectedSections: string[]
+  themeColor: string
 }
 
 interface PortfolioStore {
@@ -94,8 +119,12 @@ interface PortfolioStore {
   editingSection: string | null
   // Undo/redo state
   themeColor: string
-  past: { content: PortfolioContent; selectedSections: string[]; themeColor: string }[]
-  future: { content: PortfolioContent; selectedSections: string[]; themeColor: string }[]
+  typography: string
+  customCss: string
+  previewMode: "desktop" | "tablet" | "mobile"
+  savedSnapshots: SavedVersion[]
+  past: { content: PortfolioContent; selectedSections: string[]; themeColor: string; typography: string }[]
+  future: { content: PortfolioContent; selectedSections: string[]; themeColor: string; typography: string }[]
   undo: () => void
   redo: () => void
   canUndo: boolean
@@ -107,13 +136,21 @@ interface PortfolioStore {
   updateAboutContent: (content: Partial<AboutContent>) => void
   updateProjectsContent: (content: Partial<ProjectsContent>) => void
   updateContactContent: (content: Partial<ContactContent>) => void
+  updateServicesContent: (content: Partial<ServicesContent>) => void
   addProject: (project: Omit<Project, "id">) => void
   updateProject: (id: string, project: Partial<Project>) => void
   deleteProject: (id: string) => void
   setSelectedSections: (sections: string[]) => void
   setEditingSection: (section: string | null) => void
   setThemeColor: (color: string) => void
+  setTypography: (font: string) => void
+  setCustomCss: (css: string) => void
+  setPreviewMode: (mode: "desktop" | "tablet" | "mobile") => void
+  saveSnapshot: (name: string) => void
+  loadSnapshot: (id: string) => void
+  deleteSnapshot: (id: string) => void
   resetToDefaults: () => void
+  reorderSections: (startIndex: number, endIndex: number) => void
 }
 
 const defaultContent: PortfolioContent = {
@@ -145,10 +182,28 @@ const defaultContent: PortfolioContent = {
     subtitle: "Passionate About Creating Digital Solutions",
     description:
       "With over 5 years of experience in web development, I specialize in creating modern, scalable applications that solve real-world problems. I'm passionate about clean code, user experience, and staying up-to-date with the latest technologies.",
-    journey: [
-      "I started my journey in web development during college, where I discovered my passion for creating digital experiences. What began as curiosity about how websites work evolved into a career focused on building exceptional user interfaces and robust backend systems.",
-      "Today, I work with startups and established companies to bring their digital visions to life. I believe in the power of technology to solve problems and create meaningful connections between businesses and their users.",
-      "When I'm not coding, you can find me exploring new technologies, contributing to open-source projects, or sharing knowledge with the developer community through blog posts and mentoring.",
+    journeyItems: [
+      {
+        id: "1",
+        role: "Senior Full-Stack Developer",
+        company: "Tech Solutions Inc.",
+        period: "2021 - Present",
+        description: "Leading the development of scalable enterprise applications using Next.js and Node."
+      },
+      {
+        id: "2",
+        role: "Frontend Developer",
+        company: "Creative Digital Agency",
+        period: "2018 - 2021",
+        description: "Built responsive, accessible web interfaces for over 20+ global brands."
+      },
+      {
+        id: "3",
+        role: "Freelance Web Developer",
+        company: "Self-Employed",
+        period: "2016 - 2018",
+        description: "Started my journey creating custom WordPress and React sites for local businesses."
+      }
     ],
     skills: [
       { name: "React/Next.js", level: 95, category: "Frontend" },
@@ -158,6 +213,11 @@ const defaultContent: PortfolioContent = {
       { name: "Mobile Development", level: 75, category: "Mobile" },
       { name: "DevOps", level: 70, category: "Infrastructure" },
     ],
+  },
+  services: {
+    title: "What I Do",
+    subtitle: "My Services",
+    description: "I offer a range of services to help you achieve your digital goals.",
     services: [
       {
         title: "Frontend Development",
@@ -186,6 +246,7 @@ const defaultContent: PortfolioContent = {
     subtitle: "Featured Projects",
     description:
       "Here are some of my recent projects that showcase my skills in full-stack development, UI/UX design, and problem-solving.",
+    layout: "grid",
     projects: [
       {
         id: "1",
@@ -251,6 +312,10 @@ export const usePortfolioStore = create<PortfolioStore>()(
       selectedSections: ["hero"],
       editingSection: null,
       themeColor: "blue",
+      typography: "inter",
+      customCss: "",
+      previewMode: "desktop",
+      savedSnapshots: [],
       past: [],
       future: [],
       canUndo: false,
@@ -263,36 +328,38 @@ export const usePortfolioStore = create<PortfolioStore>()(
         })
       },
       _saveToHistory() {
-        const { content, selectedSections, themeColor, past } = get()
+        const { content, selectedSections, themeColor, typography, past } = get()
         set({
-          past: [...past, { content: JSON.parse(JSON.stringify(content)), selectedSections: [...selectedSections], themeColor }],
+          past: [...past, { content: JSON.parse(JSON.stringify(content)), selectedSections: [...selectedSections], themeColor, typography }],
           future: [],
         })
         get()._setHistoryFlags()
       },
       undo() {
-        const { past, future, content, selectedSections, themeColor } = get()
+        const { past, future, content, selectedSections, themeColor, typography } = get()
         if (past.length === 0) return
         const previous = past[past.length - 1]
         set({
           past: past.slice(0, -1),
-          future: [{ content, selectedSections, themeColor }, ...future],
+          future: [{ content, selectedSections, themeColor, typography }, ...future],
           content: previous.content,
           selectedSections: previous.selectedSections,
           themeColor: previous.themeColor,
+          typography: previous.typography,
         })
         get()._setHistoryFlags()
       },
       redo() {
-        const { past, future, content, selectedSections, themeColor } = get()
+        const { past, future, content, selectedSections, themeColor, typography } = get()
         if (future.length === 0) return
         const next = future[0]
         set({
-          past: [...past, { content, selectedSections, themeColor }],
+          past: [...past, { content, selectedSections, themeColor, typography }],
           future: future.slice(1),
           content: next.content,
           selectedSections: next.selectedSections,
           themeColor: next.themeColor,
+          typography: next.typography,
         })
         get()._setHistoryFlags()
       },
@@ -344,6 +411,16 @@ export const usePortfolioStore = create<PortfolioStore>()(
         }))
       },
 
+      updateServicesContent: (newContent) => {
+        get()._saveToHistory()
+        set((state) => ({
+          content: {
+            ...state.content,
+            services: { ...state.content.services, ...newContent },
+          },
+        }))
+      },
+
       addProject: (project) => {
         get()._saveToHistory()
         set((state) => ({
@@ -388,6 +465,16 @@ export const usePortfolioStore = create<PortfolioStore>()(
         set({ selectedSections: sections })
       },
 
+      reorderSections: (startIndex, endIndex) => {
+        const { selectedSections } = get()
+        const newOrder = Array.from(selectedSections)
+        const [movedSection] = newOrder.splice(startIndex, 1)
+        newOrder.splice(endIndex, 0, movedSection)
+
+        get()._saveToHistory()
+        set({ selectedSections: newOrder })
+      },
+
       setEditingSection: (section) => set({ editingSection: section }),
 
       setThemeColor: (color) => {
@@ -395,12 +482,49 @@ export const usePortfolioStore = create<PortfolioStore>()(
         set({ themeColor: color })
       },
 
-      resetToDefaults: () => {
+      setTypography: (font) => {
         get()._saveToHistory()
-        set({ content: defaultContent, selectedSections: ["hero"], themeColor: "blue" })
+        set({ typography: font })
       },
 
+      setCustomCss: (css) => set({ customCss: css }),
 
+      setPreviewMode: (mode) => set({ previewMode: mode }),
+
+      saveSnapshot: (name: string) => {
+        const { content, selectedSections, themeColor, savedSnapshots } = get()
+        const newSnapshot: SavedVersion = {
+          id: Date.now().toString(),
+          name,
+          date: new Date().toISOString(),
+          content: JSON.parse(JSON.stringify(content)),
+          selectedSections: [...selectedSections],
+          themeColor
+        }
+        set({ savedSnapshots: [...savedSnapshots, newSnapshot] })
+      },
+
+      loadSnapshot: (id: string) => {
+        const { savedSnapshots } = get()
+        const snapshot = savedSnapshots.find(s => s.id === id)
+        if (!snapshot) return
+        get()._saveToHistory()
+        set({
+          content: JSON.parse(JSON.stringify(snapshot.content)),
+          selectedSections: [...snapshot.selectedSections],
+          themeColor: snapshot.themeColor
+        })
+      },
+
+      deleteSnapshot: (id: string) => {
+        const { savedSnapshots } = get()
+        set({ savedSnapshots: savedSnapshots.filter(s => s.id !== id) })
+      },
+
+      resetToDefaults: () => {
+        get()._saveToHistory()
+        set({ content: defaultContent, selectedSections: ["hero"], themeColor: "blue", typography: "inter" })
+      },
     }),
     {
       name: "portfolio-content",
@@ -409,7 +533,66 @@ export const usePortfolioStore = create<PortfolioStore>()(
         selectedSections: state.selectedSections,
         editingSection: state.editingSection,
         themeColor: state.themeColor,
+        typography: state.typography,
+        customCss: state.customCss,
+        savedSnapshots: state.savedSnapshots,
       }),
+      merge: (persistedState: any, currentState) => {
+        const merged = {
+          ...currentState,
+          ...persistedState,
+          content: {
+            ...currentState.content,
+            ...(persistedState.content || {}),
+          },
+        }
+
+        // Migration: If 'services' doesn't exist on the root of 'content' in the old state,
+        // pull it from 'about.services' if it exists there, otherwise use the default state.
+        if (!persistedState.content?.services) {
+          if (persistedState.content?.about?.services) {
+            merged.content.services = {
+              ...currentState.content.services,
+              services: persistedState.content.about.services,
+            }
+          } else {
+            merged.content.services = currentState.content.services
+          }
+        }
+
+        // Migration: Convert old string[] journey to new JourneyItem[]
+        if (persistedState.content?.about?.journey && !persistedState.content?.about?.journeyItems) {
+          merged.content.about.journeyItems = persistedState.content.about.journey.map((desc: string, i: number) => ({
+            id: `legacy-${i}`,
+            role: `Role ${i + 1}`,
+            company: "Previous Company",
+            period: "Past",
+            description: desc
+          }))
+        }
+
+        // Migration: Add layout to Projects
+        if (persistedState.content?.projects && !persistedState.content?.projects?.layout) {
+          merged.content.projects.layout = "grid"
+        }
+
+        // Migration: Add empty snapshots array if missing
+        if (!persistedState.savedSnapshots) {
+          (merged as any).savedSnapshots = [];
+        }
+
+        // Migration: Add default typography
+        if (!persistedState.typography) {
+          (merged as any).typography = "inter";
+        }
+
+        // Migration: Add empty customCss
+        if (persistedState.customCss === undefined) {
+          (merged as any).customCss = "";
+        }
+
+        return merged as PortfolioStore
+      },
     },
   ),
 )

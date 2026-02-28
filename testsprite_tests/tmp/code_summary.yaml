@@ -1,0 +1,58 @@
+version: "2"
+type: frontend
+tech_stack:
+  - TypeScript
+  - Next.js (App Router)
+  - React
+  - Tailwind CSS
+  - Zustand
+  - shadcn/ui
+  - Framer Motion
+  - html2canvas / pptxgenjs / jspdf
+routes:
+  - path: /
+    file: app/page.tsx
+    auth_required: false
+    description: Main single-page portfolio builder UI
+  - path: /preview
+    file: app/preview/page.tsx
+    auth_required: false
+    description: Live full-screen preview of the constructed portfolio
+features:
+  - name: Build Portfolio Sections
+    description: Drag, drop, and toggle sections like Hero, About, Projects, Services, Contact
+    files:
+      - components/portfolio-builder.tsx
+      - lib/portfolio-store.ts
+    entry_route: /
+    user_interactions:
+      - Toggle sections using the sidebar
+      - Drag and drop sections in sidebar to reorder them
+      - Click a section in preview to open content editor
+    api_calls: []
+    auth_required: false
+  - name: Edit Section Content
+    description: Modify the text, links, and details shown in each enabled section
+    files:
+      - components/content-editor.tsx
+      - components/sections/*.tsx
+    entry_route: /
+    user_interactions:
+      - Edit visible text inputs and toggle switches
+      - Upload avatar images
+      - Add or remove features (like skills, services, projects)
+    api_calls: []
+    auth_required: false
+  - name: Theme and Export
+    description: Customize theme colors and export portfolio to multiple formats
+    files:
+      - components/portfolio-builder.tsx
+    entry_route: /
+    user_interactions:
+      - Click color swatches to apply theme
+      - Toggle dark/light mode
+      - Click Share & Export menu and select format (PPTX, PDF, JSON, Static Site)
+      - Import JSON config to restore a session
+    api_calls: []
+    auth_required: false
+known_limitations: []

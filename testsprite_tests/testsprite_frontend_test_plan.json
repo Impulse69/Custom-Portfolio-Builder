@@ -1,0 +1,590 @@
+[
+  {
+    "id": "TC001",
+    "title": "Enable Hero section from sidebar and see it appear in live preview",
+    "description": "Verifies that toggling the Hero section on in the sidebar immediately shows the Hero section in the preview.",
+    "category": "Build Portfolio Sections",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Sections sidebar\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Live preview\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Hero\" section toggle in the sidebar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Hero\" is visible in the live preview"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Hero section\" is visible in the live preview"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Disable a visible section and verify it is removed from the preview",
+    "description": "Verifies that toggling an enabled section off hides it from the live preview.",
+    "category": "Build Portfolio Sections",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"About\" section toggle in the sidebar to enable it if it is disabled"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"About section\" is visible in the live preview"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"About\" section toggle in the sidebar to disable it"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"About section\" is not visible in the live preview"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"About\" is not visible in the live preview"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Rapidly toggle a section twice ends with correct final visibility state",
+    "description": "Verifies that quickly toggling a section on and then off results in the section not being visible in the preview (no stuck state).",
+    "category": "Build Portfolio Sections",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Sections sidebar\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Services\" section toggle in the sidebar"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Services\" section toggle in the sidebar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Services section\" is not visible in the live preview"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Services\" is not visible in the live preview"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Click a section in preview opens the content editor for that section",
+    "description": "Verifies that clicking a section in the preview focuses/opens the corresponding content editor panel.",
+    "category": "Build Portfolio Sections",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Hero\" section toggle in the sidebar to enable it if it is disabled"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Hero section\" is visible in the live preview"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Hero\" section in the live preview"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Hero\" is visible in the content editor header"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Edit a section title and description and see instant preview update after saving",
+    "description": "Verifies a user can open the content editor for a section, edit text fields, save, and see the preview reflect the changes.",
+    "category": "Edit Section Content",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click a section in the preview area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Updated Section Title\" into the \"Title\" field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Updated section description for testing.\" into the \"Description\" field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Save\" in the editor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Updated Section Title\" is visible in the preview area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Updated section description for testing.\" is visible in the preview area"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Toggle a section setting and verify the visible preview changes after saving",
+    "description": "Verifies toggle switches inside the content editor can be changed and the preview reflects the new state after save.",
+    "category": "Edit Section Content",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click a section in the preview area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the first visible toggle switch in the editor"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Save\" in the editor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Preview\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Add a list item (skill/service/project) and verify it appears in the preview after saving",
+    "description": "Verifies a user can add an item to a list-style section via the editor and see it rendered in the preview.",
+    "category": "Edit Section Content",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click a list-style section in the preview area (for example Skills, Services, or Projects)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Add\" to add a new item in the editor"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Automation Added Item\" into the new item name/title field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Save\" in the editor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Automation Added Item\" is visible in the preview area"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Remove a list item (skill/service/project) and verify it no longer appears in the preview after saving",
+    "description": "Verifies a user can remove an existing item in a list-style section and the preview updates accordingly.",
+    "category": "Edit Section Content",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click a list-style section in the preview area (for example Skills, Services, or Projects)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Remove\" for the first visible item in the list"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Save\" in the editor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Preview\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Persist edited section content after a page reload (local storage persistence)",
+    "description": "Verifies that saved edits persist after a reload, indicating local persistence is working.",
+    "category": "Edit Section Content",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click a section in the preview area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Persisted Title\" into the \"Title\" field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Save\" in the editor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Persisted Title\" is visible in the preview area"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Persisted Title\" is visible in the preview area"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Cancel/close the editor without saving and verify the preview does not reflect the unsaved changes",
+    "description": "Verifies that closing the editor without saving does not apply changes to the preview.",
+    "category": "Edit Section Content",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click a section in the preview area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Unsaved Title Change\" into the \"Title\" field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Close\" (or \"Cancel\") in the editor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Content editor\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Unsaved Title Change\" is not visible in the preview area"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Apply theme color and toggle dark/light mode from the builder UI",
+    "description": "Verifies that selecting a theme color and toggling dark/light mode updates the visible UI state in the builder.",
+    "category": "Theme & Export",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Share & Export\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on a theme color swatch"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Theme\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the dark/light mode toggle"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Share & Export\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Attempt to import JSON and verify Import option is accessible (without file picker interaction)",
+    "description": "Verifies that the Import JSON entry point is visible and opens the import flow UI without relying on native OS dialogs.",
+    "category": "Theme & Export",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Share & Export\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Import JSON\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Import JSON\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Import\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"JSON\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Cancel/close the Share & Export menu without taking action",
+    "description": "Verifies the Share & Export menu can be dismissed and returns the user to the builder UI.",
+    "category": "Theme & Export",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Share & Export\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Export\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Press Escape"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Share & Export\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Export\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Undo then redo a single text edit updates the preview",
+    "description": "Verifies a text change can be undone and redone via the UI buttons and the preview updates accordingly.",
+    "category": "State History & Persistence",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on a section toggle to enable a section (if not already enabled)"
+      },
+      {
+        "type": "action",
+        "description": "Click into a visible text field in the editor"
+      },
+      {
+        "type": "action",
+        "description": "Type \"UndoRedo Test A\" into the text field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"UndoRedo Test A\" is visible in the preview pane"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Undo\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"UndoRedo Test A\" is not visible in the preview pane"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Redo\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"UndoRedo Test A\" is visible in the preview pane"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Local persistence restores edited state after page reload",
+    "description": "Verifies the builder state is saved to localStorage and restored after reloading the page.",
+    "category": "State History & Persistence",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click into a visible text field in the editor"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Persist Reload 1\" into the text field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Persist Reload 1\" is visible in the preview pane"
+      },
+      {
+        "type": "action",
+        "description": "Reload the page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Persist Reload 1\" is visible in the preview pane"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Multiple edits persist across reload and remain undoable",
+    "description": "Verifies multiple changes persist after reload and undo can still revert the latest change.",
+    "category": "State History & Persistence",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click into a visible text field in the editor"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Persist Multi A\" into the text field"
+      },
+      {
+        "type": "action",
+        "description": "Click into a different visible text field in the editor"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Persist Multi B\" into the text field"
+      },
+      {
+        "type": "action",
+        "description": "Reload the page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Persist Multi A\" is visible in the preview pane"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Persist Multi B\" is visible in the preview pane"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Undo\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Persist Multi B\" is not visible in the preview pane"
+      }
+    ]
+  }
+]

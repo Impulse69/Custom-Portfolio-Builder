@@ -30,7 +30,7 @@ export function HeroEditor() {
     updateHeroContent({ socialLinks: newSocialLinks })
   }
 
-  const handleToggleChange = (field: keyof HeroContent | `socialLinks.${keyof HeroContent["socialLinks"]}` , checked: boolean) => {
+  const handleToggleChange = (field: keyof HeroContent | `socialLinks.${keyof HeroContent["socialLinks"]}`, checked: boolean) => {
     if (field.startsWith("socialLinks.")) {
       const platform = field.split(".")[1] as keyof HeroContent["socialLinks"]
       const newSocialLinks = { ...formData.socialLinks, [`${platform}Enabled`]: checked }
@@ -57,6 +57,7 @@ export function HeroEditor() {
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
               placeholder="John Doe"
+              maxLength={25}
             />
           </div>
 
@@ -67,6 +68,7 @@ export function HeroEditor() {
               value={formData.title}
               onChange={(e) => handleChange("title", e.target.value)}
               placeholder="Full-Stack Developer"
+              maxLength={40}
             />
           </div>
 
@@ -77,6 +79,7 @@ export function HeroEditor() {
               value={formData.subtitle}
               onChange={(e) => handleChange("subtitle", e.target.value)}
               placeholder="UI/UX Designer"
+              maxLength={40}
             />
           </div>
 
@@ -88,6 +91,7 @@ export function HeroEditor() {
               onChange={(e) => handleChange("description", e.target.value)}
               placeholder="Brief description about yourself..."
               rows={3}
+              maxLength={150}
             />
           </div>
 
@@ -123,6 +127,7 @@ export function HeroEditor() {
               value={formData.ctaPrimary}
               onChange={(e) => handleChange("ctaPrimary", e.target.value)}
               placeholder="View My Work"
+              maxLength={20}
             />
             <div className="flex items-center space-x-2 mt-2">
               <Switch
@@ -141,6 +146,7 @@ export function HeroEditor() {
               value={formData.ctaSecondary}
               onChange={(e) => handleChange("ctaSecondary", e.target.value)}
               placeholder="Download CV"
+              maxLength={20}
             />
             <div className="flex items-center space-x-2 mt-2">
               <Switch

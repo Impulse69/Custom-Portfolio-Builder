@@ -19,10 +19,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import dynamic from "next/dynamic"
 import { useTheme } from "next-themes"
 import { HeroSection } from "@/components/sections/hero-section"
 import { AboutSection } from "@/components/sections/about-section"
+import { ServicesSection } from "@/components/sections/services-section"
 import { ProjectsSection } from "@/components/sections/projects-section"
 import { ContactSection } from "@/components/sections/contact-section"
 import { ContentEditor } from "@/components/content-editor"
@@ -31,12 +40,30 @@ import type { SectionType } from "@/types/portfolio"
 import Link from "next/link"
 import { ClientOnly } from "@/components/client-only"
 import { useToast } from "@/hooks/use-toast"
-import { useRef } from "react"
+import React, { useRef } from "react"
 import { z } from "zod"
-import React from "react"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 import JSZip from "jszip"
+import QRCode from "react-qr-code"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { SortableSidebarItem } from "./sortable-sidebar-item"
+import { CustomCssEditor } from "./custom-css-editor"
+import { ResumePdfExport } from "./resume-pdf-export"
 
 const LucideUser = dynamic(() => import("lucide-react").then((mod) => mod.User), { ssr: false })
 const LucideHome = dynamic(() => import("lucide-react").then((mod) => mod.Home), { ssr: false })
@@ -55,6 +82,12 @@ const LucideSettings = dynamic(() => import("lucide-react").then((mod) => mod.Se
 const LucideHelpCircle = dynamic(() => import("lucide-react").then((mod) => mod.HelpCircle), { ssr: false })
 const LucideRotateCcw = dynamic(() => import("lucide-react").then((mod) => mod.RotateCcw), { ssr: false })
 const LucideRotateCw = dynamic(() => import("lucide-react").then((mod) => mod.RotateCw), { ssr: false })
+const LucideUndo = dynamic(() => import("lucide-react").then((mod) => mod.Undo), { ssr: false })
+const LucideRedo = dynamic(() => import("lucide-react").then((mod) => mod.Redo), { ssr: false })
+const LucideHistory = dynamic(() => import("lucide-react").then((mod) => mod.History), { ssr: false })
+const LucideTrash2 = dynamic(() => import("lucide-react").then((mod) => mod.Trash2), { ssr: false })
+const LucideSave = dynamic(() => import("lucide-react").then((mod) => mod.Save), { ssr: false })
+const LucideCode2 = dynamic(() => import("lucide-react").then((mod) => mod.Code2), { ssr: false })
 
 const sections = [
   {
@@ -68,6 +101,12 @@ const sections = [
     name: "About",
     icon: LucideUser,
     description: "Personal information and skills",
+  },
+  {
+    id: "services" as SectionType,
+    name: "Services",
+    icon: LucideSettings,
+    description: "Services and offerings",
   },
   {
     id: "projects" as SectionType,
@@ -116,6 +155,11 @@ const aboutSchema = z.object({
     level: z.number(),
     category: z.string(),
   })),
+})
+const servicesSchema = z.object({
+  title: z.string(),
+  subtitle: z.string(),
+  description: z.string(),
   services: z.array(z.object({
     title: z.string(),
     description: z.string(),
@@ -163,6 +207,7 @@ const importSchema = z.object({
   content: z.object({
     hero: heroSchema,
     about: aboutSchema,
+    services: servicesSchema,
     projects: projectsSchema,
     contact: contactSchema,
   }),
@@ -171,10 +216,12 @@ const importSchema = z.object({
 })
 
 export function PortfolioBuilder() {
-  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, themeColor, setThemeColor, resetToDefaults, undo, redo, canUndo, canRedo } = usePortfolioStore()
+  const { selectedSections, setSelectedSections, reorderSections, editingSection, setEditingSection, content, themeColor, setThemeColor, typography, setTypography, resetToDefaults, undo, redo, canUndo, canRedo, savedSnapshots, saveSnapshot, loadSnapshot, deleteSnapshot } = usePortfolioStore()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
   const dialogRef = useRef<HTMLDialogElement | null>(null)
+  const [cssEditorOpen, setCssEditorOpen] = React.useState(false)
+  const [resumeExportOpen, setResumeExportOpen] = React.useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [importDialogOpen, setImportDialogOpen] = React.useState(false)
   const [pdfDialogOpen, setPdfDialogOpen] = React.useState(false)
@@ -182,7 +229,47 @@ export function PortfolioBuilder() {
   const [isExportingStatic, setIsExportingStatic] = React.useState(false)
   const [isExportingJson, setIsExportingJson] = React.useState(false)
   const [isExportingPptx, setIsExportingPptx] = React.useState(false)
+  const [snapshotsDialogOpen, setSnapshotsDialogOpen] = React.useState(false)
+  const [newSnapshotName, setNewSnapshotName] = React.useState("")
   const previewRef = useRef<HTMLDivElement | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (active.id !== over?.id) {
+      const oldIndex = selectedSections.indexOf(active.id as string)
+      const newIndex = selectedSections.indexOf(over?.id as string)
+      reorderSections(oldIndex, newIndex)
+    }
+  }
+
+  // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Y / Ctrl+Shift+Z = redo
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCtrl = e.ctrlKey || e.metaKey
+      if (!isCtrl) return
+      if (e.key === "z" && !e.shiftKey) {
+        e.preventDefault()
+        if (canUndo) undo()
+      } else if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+        e.preventDefault()
+        if (canRedo) redo()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [canUndo, canRedo, undo, redo])
 
   const toggleSection = (sectionId: SectionType) => {
     const wasSelected = selectedSections.includes(sectionId)
@@ -216,6 +303,8 @@ export function PortfolioBuilder() {
         return <HeroSection key="hero" content={content.hero} />
       case "about":
         return <AboutSection key="about" content={content.about} />
+      case "services":
+        return <ServicesSection key="services" content={content.services} />
       case "projects":
         return <ProjectsSection key="projects" content={content.projects} />
       case "contact":
@@ -330,39 +419,53 @@ export function PortfolioBuilder() {
       setIsExportingPdf(false)
       return
     }
-    html2canvas(previewNode, { scale: 2, useCORS: true, windowWidth: previewNode.scrollWidth, windowHeight: previewNode.scrollHeight }).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" })
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = pageWidth
-      const imgHeight = (canvas.height * pageWidth) / canvas.width
-      let heightLeft = imgHeight
-      let position = 0
-      // Add first page
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-      position -= pageHeight
-      // Add more pages if needed
-      while (heightLeft > 0) {
-        pdf.addPage()
+
+    // Force Light Mode for Export
+    const htmlNode = document.documentElement;
+    const wasDark = htmlNode.classList.contains("dark");
+    if (wasDark) htmlNode.classList.remove("dark");
+
+    setTimeout(() => {
+      html2canvas(previewNode, { scale: 2, useCORS: true, windowWidth: previewNode.scrollWidth, windowHeight: previewNode.scrollHeight }).then((canvas) => {
+        const imgData = canvas.toDataURL("image/png")
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" })
+        const pageWidth = pdf.internal.pageSize.getWidth()
+        const pageHeight = pdf.internal.pageSize.getHeight()
+        const imgWidth = pageWidth
+        const imgHeight = (canvas.height * pageWidth) / canvas.width
+        let heightLeft = imgHeight
+        let position = 0
+        // Add first page
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight)
         heightLeft -= pageHeight
         position -= pageHeight
-      }
-      const userName = content.hero?.name?.toLowerCase().replace(/\s+/g, "-") || "portfolio"
-      pdf.save(`${userName}-portfolio.pdf`)
-      toast({ title: "PDF exported", description: "Your portfolio PDF has been downloaded." })
-      setIsExportingPdf(false)
-    }).catch(() => {
-      toast({ title: "Export failed", description: "Failed to generate PDF." })
-      setIsExportingPdf(false)
-    })
+        // Add more pages if needed
+        while (heightLeft > 0) {
+          pdf.addPage()
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight)
+          heightLeft -= pageHeight
+          position -= pageHeight
+        }
+        const userName = content.hero?.name?.toLowerCase().replace(/\s+/g, "-") || "portfolio"
+        pdf.save(`${userName}-portfolio.pdf`)
+        toast({ title: "PDF exported", description: "Your portfolio PDF has been downloaded." })
+        if (wasDark) htmlNode.classList.add("dark");
+        setIsExportingPdf(false)
+      }).catch(() => {
+        toast({ title: "Export failed", description: "Failed to generate PDF." })
+        if (wasDark) htmlNode.classList.add("dark");
+        setIsExportingPdf(false)
+      })
+    }, 150)
   }
 
   // Export as PPTX
   async function handleExportPptx() {
     setIsExportingPptx(true)
+    const htmlNode = document.documentElement;
+    const wasDark = htmlNode.classList.contains("dark");
+    if (wasDark) htmlNode.classList.remove("dark");
+
     try {
       const moduleName = "pptxgenjs"
       const pptxModule = await import(/* webpackIgnore: true */ moduleName)
@@ -380,7 +483,7 @@ export function PortfolioBuilder() {
         const canvas = await html2canvas(node as HTMLElement, {
           scale: 2,
           useCORS: true,
-          backgroundColor: theme === "dark" ? "#0a0a0a" : "#ffffff",
+          backgroundColor: "#ffffff",
         })
         const imgData = canvas.toDataURL("image/jpeg", 0.95)
 
@@ -395,6 +498,7 @@ export function PortfolioBuilder() {
       console.error(err)
       toast({ title: "Export failed", description: "Failed to generate PPTX.", variant: "destructive" })
     } finally {
+      if (wasDark) htmlNode.classList.add("dark");
       setIsExportingPptx(false)
     }
   }
@@ -502,14 +606,6 @@ body {
     background-color: #ffffff;
 }
 
-/* Dark mode styles */
-@media (prefers-color-scheme: dark) {
-    body {
-        color: #ffffff;
-        background-color: #0a0a0a;
-    }
-}
-
 /* Container */
 .container {
     max-width: 1200px;
@@ -530,12 +626,6 @@ section {
 #hero {
     background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     text-align: center;
-}
-
-@media (prefers-color-scheme: dark) {
-    #hero {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    }
 }
 
 /* Avatar */
@@ -682,13 +772,6 @@ p {
     font-size: 0.875rem;
     font-weight: 500;
     margin-bottom: 2rem;
-}
-
-@media (prefers-color-scheme: dark) {
-    .badge {
-        background: #1e293b;
-        color: #94a3b8;
-    }
 }`
   }
 
@@ -832,7 +915,7 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
       const exportData = {
         content,
         selectedSections,
-        theme,
+        theme: "light",
         metadata: {
           exportedAt: new Date().toISOString(),
           version: "1.0.0",
@@ -867,6 +950,22 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
     }
   }
 
+  function handleSaveSnapshot() {
+    if (!newSnapshotName.trim()) {
+      toast({ title: "Name required", description: "Please enter a name for your snapshot.", variant: "destructive" })
+      return
+    }
+    saveSnapshot(newSnapshotName.trim())
+    setNewSnapshotName("")
+    toast({ title: "Snapshot saved", description: "Your portfolio version has been saved." })
+  }
+
+  function handleLoadSnapshot(id: string, name: string) {
+    loadSnapshot(id)
+    setSnapshotsDialogOpen(false)
+    toast({ title: "Snapshot loaded", description: `Loaded version: ${name}` })
+  }
+
   const colorSwatches = [
     { name: "Blue", value: "blue", class: "bg-blue-500" },
     { name: "Violet", value: "violet", class: "bg-violet-500" },
@@ -877,85 +976,217 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
   ]
 
   return (
-    <SidebarProvider>
-      <div className={`flex min-h-screen w-full theme-${themeColor}`}>
-        <Sidebar className="border-r">
-          <SidebarHeader className="border-b p-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <LucidePalette className="h-4 w-4" />
+    <>
+      <SidebarProvider>
+        {/* We apply the theme container inside SidebarProvider, but not as a hard flex container that breaks sidebar logic */}
+        <div className={`flex min-h-screen w-full relative theme-${themeColor}`}>
+          <Sidebar collapsible="icon" className="border-r">
+            <SidebarHeader className="border-b p-4 flex flex-row items-center justify-between group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center">
+              <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap group-data-[collapsible=icon]:hidden">
+                <div className="flex shrink-0 h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <LucidePalette className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold truncate leading-tight">Portfolio Builder</h2>
+                  <p className="text-xs text-muted-foreground truncate">Create your portfolio</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">Portfolio Builder</h2>
-                <p className="text-sm text-muted-foreground">Create your portfolio</p>
-              </div>
-            </div>
-          </SidebarHeader>
+              <SidebarTrigger className="shrink-0" />
+            </SidebarHeader>
 
-          <SidebarContent className="p-4">
-            <div className="space-y-4">
-              <div id="tour-step-1-sections">
-                <h3 className="mb-3 text-sm font-medium text-muted-foreground">SECTIONS</h3>
-                <SidebarMenu className="space-y-2">
-                  {sections.map((section) => {
-                    const Icon = section.icon
-                    const isSelected = selectedSections.includes(section.id)
-                    const isEditing = editingSection === section.id
+            <SidebarContent className="p-2 sm:p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:overflow-hidden">
+              <div className="space-y-4 w-full">
+                <div id="tour-step-1-sections">
+                  <h3 className="mb-3 text-xs font-semibold text-muted-foreground tracking-wider group-data-[collapsible=icon]:hidden px-2">SECTIONS</h3>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SidebarMenu className="space-y-2">
+                      <SortableContext
+                        items={selectedSections}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {/* Only render selected sections first in their sorted order */}
+                        {selectedSections.map((sectionId) => {
+                          const section = sections.find(s => s.id === sectionId)
+                          if (!section) return null
 
-                    return (
-                      <SidebarMenuItem key={section.id}>
-                        <div className="flex items-center gap-2">
-                          <SidebarMenuButton
-                            onClick={() => toggleSection(section.id)}
-                            className={`flex-1 justify-start ${isSelected ? "bg-primary text-primary-foreground" : ""}`}
-                          >
-                            <Icon className="h-4 w-4" />
-                            <div className="flex flex-col items-start">
-                              <span className="font-medium">{section.name}</span>
-                              <span className="text-xs opacity-70">{section.description}</span>
-                            </div>
-                          </SidebarMenuButton>
-                          {isSelected && (
-                            <Button
-                              id={`tour-step-4-settings-${section.id}`}
-                              variant={isEditing ? "default" : "ghost"}
-                              size="icon"
-                              className="h-8 w-8 shrink-0"
-                              onClick={() => handleEditSection(section.id)}
-                            >
-                              <LucideSettings className="h-3 w-3" />
-                            </Button>
-                          )}
+                          const Icon = section.icon
+                          const isSelected = true
+                          const isEditing = editingSection === section.id
+
+                          return (
+                            <SortableSidebarItem key={section.id} id={section.id}>
+                              <SidebarMenuItem>
+                                <div className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center">
+                                  {/* Drag Handle - Hidden when collapsed */}
+                                  <div className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-foreground p-1 touch-none group-data-[collapsible=icon]:hidden">
+                                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
+                                      <path d="M5.5 3C4.67157 3 4 3.67157 4 4.5C4 5.32843 4.67157 6 5.5 6C6.32843 6 7 5.32843 7 4.5C7 3.67157 6.32843 3 5.5 3ZM5.5 5C5.22386 5 5 4.77614 5 4.5C5 4.22386 5.22386 4 5.5 4C5.77614 4 6 4.22386 6 4.5C6 4.77614 5.77614 5 5.5 5ZM9.5 3C8.67157 3 8 3.67157 8 4.5C8 5.32843 8.67157 6 9.5 6C10.3284 6 11 5.32843 11 4.5C11 3.67157 10.3284 3 9.5 3ZM9.5 5C9.22386 5 9 4.77614 9 4.5C9 4.22386 9.22386 4 9.5 4C9.77614 4 10 4.22386 10 4.5C10 4.77614 9.77614 5 9.5 5ZM5.5 7.5C4.67157 7.5 4 8.17157 4 9C4 9.82843 4.67157 10.5 5.5 10.5C6.32843 10.5 7 9.82843 7 9C7 8.17157 6.32843 7.5 5.5 7.5ZM5.5 9.5C5.22386 9.5 5 9.27614 5 9C5 8.72386 5.22386 8.5 5.5 8.5C5.77614 8.5 6 8.72386 6 9C6 9.27614 5.77614 9.5 5.5 9.5ZM9.5 7.5C8.67157 7.5 8 8.17157 8 9C8 9.82843 8.67157 10.5 9.5 10.5C10.3284 10.5 11 9.82843 11 9C11 8.17157 10.3284 7.5 9.5 7.5ZM9.5 9.5C9.22386 9.5 9 9.27614 9 9C9 8.72386 9.22386 8.5 9.5 8.5C9.77614 8.5 10 8.72386 10 9C10 9.27614 9.77614 9.5 9.5 9.5ZM5.5 12C4.67157 12 4 12.6716 4 13.5C4 14.3284 4.67157 15 5.5 15C6.32843 15 7 14.3284 7 13.5C7 12.6716 6.32843 12 5.5 12ZM5.5 14C5.22386 14 5 13.7761 5 13.5C5 13.2239 5.22386 13 5.5 13C5.77614 13 6 13.2239 6 13.5C6 13.7761 5.77614 14 5.5 14ZM9.5 12C8.67157 12 8 12.6716 8 13.5C8 14.3284 8.67157 15 9.5 15C10.3284 15 11 14.3284 11 13.5C11 12.6716 10.3284 12 9.5 12ZM9.5 14C9.22386 14 9 13.7761 9 13.5C9 13.2239 9.22386 13 9.5 13C9.77614 13 10 13.2239 10 13.5C10 13.7761 9.77614 14 9.5 14Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                                    </svg>
+                                  </div>
+                                  <SidebarMenuButton
+                                    onClick={() => toggleSection(section.id)}
+                                    tooltip={section.name}
+                                    className={`flex flex-1 items-center gap-3 overflow-hidden bg-primary text-primary-foreground group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0`}
+                                  >
+                                    <Icon className="shrink-0 h-4 w-4" />
+                                    <div className="flex flex-col items-start truncate group-data-[collapsible=icon]:hidden">
+                                      <span className="font-medium text-sm leading-tight">{section.name}</span>
+                                      <span className="text-[10px] opacity-70 truncate w-full">{section.description}</span>
+                                    </div>
+                                  </SidebarMenuButton>
+                                  <Button
+                                    id={`tour-step-4-settings-${section.id}`}
+                                    variant={isEditing ? "default" : "ghost"}
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0 group-data-[collapsible=icon]:hidden"
+                                    onClick={() => handleEditSection(section.id)}
+                                  >
+                                    <LucideSettings className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </SidebarMenuItem>
+                            </SortableSidebarItem>
+                          )
+                        })}
+                      </SortableContext>
+
+                      {/* Render unselected sections below */}
+                      {sections.filter(s => !selectedSections.includes(s.id)).length > 0 && (
+                        <div className="pt-4 pb-2">
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase opacity-70 mb-2 px-2 group-data-[collapsible=icon]:hidden">Available Sections</h4>
                         </div>
-                      </SidebarMenuItem>
-                    )
-                  })}
-                </SidebarMenu>
+                      )}
+                      {sections.filter(s => !selectedSections.includes(s.id)).map((section) => {
+                        const Icon = section.icon
+                        const isSelected = false
+                        const isEditing = false
+
+                        return (
+                          <SidebarMenuItem key={section.id}>
+                            <div className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:pl-0 pl-7 group-data-[collapsible=icon]:p-0">
+                              <SidebarMenuButton
+                                onClick={() => toggleSection(section.id)}
+                                tooltip={section.name}
+                                className={`flex flex-1 items-center gap-3 overflow-hidden opacity-60 hover:opacity-100 ${isSelected ? "bg-primary text-primary-foreground" : ""} group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0`}
+                              >
+                                <Icon className="shrink-0 h-4 w-4" />
+                                <div className="flex flex-col items-start truncate group-data-[collapsible=icon]:hidden">
+                                  <span className="font-medium text-sm leading-tight">{section.name}</span>
+                                  <span className="text-[10px] opacity-70 truncate w-full">{section.description}</span>
+                                </div>
+                              </SidebarMenuButton>
+                            </div>
+                          </SidebarMenuItem>
+                        )
+                      })}
+                    </SidebarMenu>
+                  </DndContext>
+                </div>
               </div>
 
               <Separator />
 
-              <div className="space-y-2" id="tour-step-2-actions">
-                <h3 className="text-sm font-medium text-muted-foreground">ACTIONS</h3>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                    <Link href="/preview">
-                      <LucideEye className="h-4 w-4 mr-2" />
-                      Preview
+              <div className="space-y-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center" id="tour-step-2-actions">
+                <h3 className="text-xs font-semibold text-muted-foreground tracking-wider group-data-[collapsible=icon]:hidden px-2">ACTIONS</h3>
+                <div className="space-y-2 w-full">
+                  <Button variant="outline" size="sm" className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0" asChild>
+                    <Link href="/preview" title="Preview">
+                      <LucideEye className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                      <span className="group-data-[collapsible=icon]:hidden">Preview</span>
                     </Link>
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+                    title="Custom CSS"
+                    onClick={() => setCssEditorOpen(true)}
+                  >
+                    <LucideCode2 className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                    <span className="group-data-[collapsible=icon]:hidden">Custom CSS</span>
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0" title="Share Portfolio">
+                        <LucideGlobe className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                        <span className="group-data-[collapsible=icon]:hidden">Share</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Share Portfolio</DialogTitle>
+                        <DialogDescription>
+                          Scan the QR code to view this portfolio on a mobile device, or copy the link.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex flex-col items-center justify-center p-6 bg-muted/50 rounded-lg border">
+                        <div className="bg-white p-4 rounded-xl shadow-sm border mb-4">
+                          <QRCode
+                            value={`https://portfolio-builder.app/${content.hero.name.toLowerCase().replace(/\s+/g, '') || 'preview'}`}
+                            size={160}
+                            level="M"
+                          />
+                        </div>
+                        <p className="text-sm font-medium mb-4">
+                          portfolio-builder.app/{content.hero.name.toLowerCase().replace(/\s+/g, '') || 'preview'}
+                        </p>
+                        <div className="flex gap-2 w-full">
+                          <Button variant="outline" className="flex-1" onClick={() => {
+                            const svg = document.querySelector('svg');
+                            if (svg) {
+                              const svgData = new XMLSerializer().serializeToString(svg);
+                              const canvas = document.createElement("canvas");
+                              const ctx = canvas.getContext("2d");
+                              const img = new Image();
+                              img.onload = () => {
+                                canvas.width = img.width + 40;
+                                canvas.height = img.height + 40;
+                                if (ctx) {
+                                  ctx.fillStyle = "white";
+                                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                  ctx.drawImage(img, 20, 20);
+                                  const pngFile = canvas.toDataURL("image/png");
+                                  const downloadLink = document.createElement("a");
+                                  downloadLink.download = "portfolio-qr.png";
+                                  downloadLink.href = pngFile;
+                                  downloadLink.click();
+                                }
+                              };
+                              img.src = "data:image/svg+xml;base64," + btoa(svgData);
+                            }
+                          }}>
+                            <LucideDownload className="h-4 w-4 mr-2" />
+                            Download QR
+                          </Button>
+                          <Button className="flex-1" onClick={() => {
+                            navigator.clipboard.writeText(`https://portfolio-builder.app/${content.hero.name.toLowerCase().replace(/\s+/g, '') || 'preview'}`)
+                          }}>
+                            Copy Link
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full justify-start">
-                        <LucideDownload className="h-4 w-4 mr-2" />
-                        Export Options
-                        <LucideChevronDown className="h-4 w-4 ml-auto" />
+                      <Button variant="outline" size="sm" className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0" title="Export Options">
+                        <LucideDownload className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                        <span className="group-data-[collapsible=icon]:hidden">Export Options</span>
+                        <LucideChevronDown className="h-4 w-4 ml-auto group-data-[collapsible=icon]:hidden" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-56">
                       <DropdownMenuItem onClick={handleExportPdf} disabled={isExportingPdf}>
                         <LucideFileText className="h-4 w-4 mr-2" />
                         {isExportingPdf ? "Exporting PDF..." : "Export as PDF"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setResumeExportOpen(true)}>
+                        <LucideFileText className="h-4 w-4 mr-2" />
+                        Export as Resume PDF
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleExportPptx} disabled={isExportingPptx}>
                         <LucideFileText className="h-4 w-4 mr-2" />
@@ -971,9 +1202,9 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleImportClick}>
-                    <LucideDownload className="h-4 w-4 mr-2 rotate-180" />
-                    Import
+                  <Button variant="outline" size="sm" className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0" onClick={handleImportClick} title="Import">
+                    <LucideDownload className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 w-4 mr-2 rotate-180" />
+                    <span className="group-data-[collapsible=icon]:hidden">Import</span>
                   </Button>
                   <input
                     ref={fileInputRef}
@@ -994,45 +1225,98 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
                       </div>
                     </dialog>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => window.dispatchEvent(new CustomEvent("restart-tour"))}
-                  >
-                    <LucideHelpCircle className="h-4 w-4 mr-2" />
-                    Tour
-                  </Button>
-                  <div className="flex gap-2 w-full">
+                  <Dialog open={snapshotsDialogOpen} onOpenChange={setSnapshotsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0" title="Snapshots">
+                        <LucideHistory className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                        <span className="group-data-[collapsible=icon]:hidden">Snapshots</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Portfolio Snapshots</DialogTitle>
+                        <DialogDescription>
+                          Save exactly how your portfolio looks right now, and easily swap between different versions (e.g. Developer vs Designer mode).
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 pt-4">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="e.g. Minimal Dev Theme"
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            value={newSnapshotName}
+                            onChange={(e) => setNewSnapshotName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveSnapshot()
+                            }}
+                          />
+                          <Button size="sm" onClick={handleSaveSnapshot}>
+                            <LucideSave className="h-4 w-4 mr-2" />
+                            Save
+                          </Button>
+                        </div>
+
+                        <div className="space-y-2 mt-4 max-h-[250px] overflow-y-auto pr-2">
+                          {savedSnapshots.length === 0 ? (
+                            <p className="text-sm text-center text-muted-foreground py-4">No snapshots saved yet.</p>
+                          ) : (
+                            savedSnapshots.map((snap) => (
+                              <div key={snap.id} className="flex flex-col sm:flex-row gap-2 justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors group">
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-sm">{snap.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(snap.date).toLocaleDateString()} • {snap.selectedSections.length} Sections • {snap.themeColor}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleLoadSnapshot(snap.id, snap.name)}>
+                                    <LucideRotateCcw className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => deleteSnapshot(snap.id)}>
+                                    <LucideTrash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )).reverse()
+                          )}
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <div className="flex gap-2 w-full group-data-[collapsible=icon]:flex-col">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex-1 justify-center text-muted-foreground"
+                      className="flex-1 justify-center text-muted-foreground group-data-[collapsible=icon]:p-0"
                       onClick={undo}
                       disabled={!canUndo}
                       title="Undo"
                     >
-                      <LucideRotateCcw className="h-4 w-4 mr-2" /> Undo
+                      <LucideRotateCcw className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                      <span className="group-data-[collapsible=icon]:hidden">Undo</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex-1 justify-center text-muted-foreground"
+                      className="flex-1 justify-center text-muted-foreground group-data-[collapsible=icon]:p-0"
                       onClick={redo}
                       disabled={!canRedo}
                       title="Redo"
                     >
-                      <LucideRotateCw className="h-4 w-4 mr-2" /> Redo
+                      <LucideRotateCw className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                      <span className="group-data-[collapsible=icon]:hidden">Redo</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex-1 justify-center text-muted-foreground hover:text-destructive"
+                      className="flex-1 justify-center text-muted-foreground group-data-[collapsible=icon]:p-0 hover:text-destructive"
                       onClick={handleResetClick}
                       style={{ opacity: 0.85 }}
                       title="Reset"
                     >
-                      <span className="mr-2">↺</span> Reset
+                      <span className="mr-2 group-data-[collapsible=icon]:mr-0">↺</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Reset</span>
                     </Button>
                   </div>
                   <dialog ref={dialogRef} className="rounded-lg p-6 shadow-xl border bg-background z-50">
@@ -1050,158 +1334,174 @@ Generated by Portfolio Builder - A modern, no-code portfolio creation tool.`
 
               <Separator />
 
-              <div>
-                <h3 className="mb-2 text-sm font-medium text-muted-foreground">THEME SETTINGS</h3>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
+              <div className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
+                <h3 className="mb-2 text-xs font-semibold text-muted-foreground tracking-wider group-data-[collapsible=icon]:hidden px-2">THEME SETTINGS</h3>
+                <div className="space-y-4 w-full">
+                  <div className="flex gap-2 group-data-[collapsible=icon]:flex-col">
                     <Button
                       variant={theme === "light" ? "default" : "outline"}
                       size="sm"
                       onClick={() => setTheme("light")}
-                      className="flex-1"
+                      className="flex-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+                      title="Light Mode"
                     >
-                      <LucideSun className="h-4 w-4 mr-2" />
-                      Light
+                      <LucideSun className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                      <span className="group-data-[collapsible=icon]:hidden">Light</span>
                     </Button>
                     <Button
                       variant={theme === "dark" ? "default" : "outline"}
                       size="sm"
                       onClick={() => setTheme("dark")}
-                      className="flex-1"
+                      className="flex-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+                      title="Dark Mode"
                     >
-                      <LucideMoon className="h-4 w-4 mr-2" />
-                      Dark
+                      <LucideMoon className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0 mr-2" />
+                      <span className="group-data-[collapsible=icon]:hidden">Dark</span>
                     </Button>
                   </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground mb-2 block">Accent Color</span>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
+                    <span className="text-[10px] text-muted-foreground mb-2 block group-data-[collapsible=icon]:block group-data-[collapsible=icon]:text-center px-1 font-semibold uppercase opacity-70 tracking-wider">Accent</span>
+                    <div className="flex flex-wrap gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-4">
                       {colorSwatches.map((swatch) => (
                         <button
                           key={swatch.value}
                           onClick={() => setThemeColor(swatch.value)}
                           title={swatch.name}
-                          className={`w-6 h-6 rounded-full shadow-sm border-2 transition-all ${themeColor === swatch.value ? "border-foreground scale-110" : "border-transparent hover:scale-105"
+                          className={`w-6 h-6 rounded-full shadow-sm border-2 transition-all group-data-[collapsible=icon]:w-4 group-data-[collapsible=icon]:h-4 ${themeColor === swatch.value ? "border-foreground scale-110" : "border-transparent hover:scale-105"
                             } ${swatch.class}`}
                         />
                       ))}
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </SidebarContent>
-        </Sidebar>
-
-        <SidebarInset className={`flex-1 ${editingSection ? "mr-96" : ""} transition-all duration-300`}>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">Portfolio Preview</h1>
-              <span className="text-sm text-muted-foreground">
-                ({selectedSections.length} section{selectedSections.length !== 1 ? "s" : ""} selected)
-              </span>
-            </div>
-            {editingSection && (
-              <div className="ml-auto flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  Editing: {sections.find((s) => s.id === editingSection)?.name}
-                </span>
-              </div>
-            )}
-          </header>
-
-          <main className="flex-1 overflow-y-auto p-4 md:p-8" id="tour-step-3-preview">
-            <div className="mx-auto max-w-5xl space-y-8">
-              {selectedSections.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted bg-muted/20 p-12 text-center min-h-[calc(100vh-4rem)]">
-                  <div className="text-center">
-                    <LucidePalette className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h2 className="text-2xl font-bold mb-2">Your Portfolio is Empty</h2>
-                    <p className="text-muted-foreground">
-                      Select a section from the left sidebar to start building your portfolio.
-                    </p>
+                  <div className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
+                    <span className="text-[10px] text-muted-foreground mb-2 block group-data-[collapsible=icon]:block group-data-[collapsible=icon]:text-center px-1 font-semibold uppercase opacity-70 tracking-wider">Typography</span>
+                    <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
+                      <Button
+                        variant={typography === "inter" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setTypography("inter")}
+                        className="justify-start font-sans"
+                      >
+                        Modern Sans
+                      </Button>
+                      <Button
+                        variant={typography === "roboto-serif" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setTypography("roboto-serif")}
+                        className="justify-start font-serif"
+                      >
+                        Classic Serif
+                      </Button>
+                      <Button
+                        variant={typography === "jetbrains-mono" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setTypography("jetbrains-mono")}
+                        className="justify-start font-mono"
+                      >
+                        Tech Mono
+                      </Button>
+                    </div>
+                    {/* Collapsed state indicator */}
+                    <div className="hidden group-data-[collapsible=icon]:flex flex-col items-center gap-2">
+                      <div className="w-6 h-6 rounded border flex items-center justify-center font-bold text-xs bg-muted/50 cursor-pointer hover:bg-muted" title="Typography" onClick={() => {
+                        const next = typography === 'inter' ? 'roboto-serif' : typography === 'roboto-serif' ? 'jetbrains-mono' : 'inter';
+                        setTypography(next);
+                      }}>
+                        {typography === 'inter' ? 'Aa' : typography === 'roboto-serif' ? 'Serif' : '</>'}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <motion.div
-                  key={selectedSections.join("-")}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-12 pb-12"
-                >
-                  <style dangerouslySetInnerHTML={{
-                    __html: `
-                      .gamma-card section {
-                        min-height: 100% !important;
-                        height: 100% !important;
-                        padding-top: 4rem !important;
-                        padding-bottom: 4rem !important;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                      }
-                      .gamma-card .container {
-                        max-width: 1200px !important;
-                        width: 100% !important;
-                        margin: 0 auto;
-                        padding: 0 4rem !important;
-                      }
-                      .preview-scaler {
-                        width: 1440px;
-                        height: 810px;
-                        transform-origin: top left;
-                        transform: scale(calc(100% / 1440));
-                      }
-                    `}} />
-                  {selectedSections.map((sectionId) => (
-                    <div
-                      key={sectionId}
-                      id={`section-${sectionId}`}
-                      className="gamma-card group relative aspect-[16/9] w-full overflow-hidden rounded-2xl border bg-background shadow-xl ring-1 ring-border/50 cursor-pointer transition-all hover:ring-2 hover:ring-primary"
-                      onClick={() => setEditingSection(sectionId as SectionType)}
-                    >
-                      <div className="absolute inset-0 bg-background overflow-hidden" ref={(el) => {
-                        // Dynamic scaling based on parent width
-                        if (el && el.parentElement) {
-                          const parentWidth = el.parentElement.clientWidth;
-                          const scale = parentWidth / 1440;
-                          const scaler = el.querySelector('.preview-scaler') as HTMLElement;
-                          if (scaler) {
-                            scaler.style.transform = `scale(${scale})`;
-                          }
-                        }
-                      }}>
-                        <div className="preview-scaler max-w-none flex flex-col bg-background">
+              </div>
+            </SidebarContent>
+          </Sidebar>
+
+          <SidebarInset className={`transition-all duration-300 w-full ${editingSection ? "mr-96" : ""}`}>
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-semibold">Portfolio Preview</h1>
+                <span className="text-sm text-muted-foreground hidden sm:inline-block">
+                  ({selectedSections.length} section{selectedSections.length !== 1 ? "s" : ""} selected)
+                </span>
+              </div>
+              <div className="ml-auto flex items-center gap-2 pr-2">
+                <div className="flex items-center border rounded-md overflow-hidden bg-background mr-2 h-9">
+                  <Button variant="ghost" size="sm" onClick={undo} disabled={!canUndo} className="h-full rounded-none px-3" title="Undo (Ctrl+Z)">
+                    <LucideUndo className="h-4 w-4" />
+                  </Button>
+                  <div className="w-[1px] h-full bg-border" />
+                  <Button variant="ghost" size="sm" onClick={redo} disabled={!canRedo} className="h-full rounded-none px-3" title="Redo (Ctrl+Y)">
+                    <LucideRedo className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {editingSection && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground hidden md:inline-block">
+                      Editing: {sections.find((s) => s.id === editingSection)?.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-4 md:p-8" id="tour-step-3-preview">
+              <div className="mx-auto max-w-5xl space-y-8">
+                {selectedSections.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted bg-muted/20 p-12 text-center min-h-[calc(100vh-4rem)]">
+                    <div className="text-center">
+                      <LucidePalette className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h2 className="text-2xl font-bold mb-2">Your Portfolio is Empty</h2>
+                      <p className="text-muted-foreground">
+                        Select a section from the left sidebar to start building your portfolio.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <motion.div
+                    key={selectedSections.join("-")}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`space-y-12 pb-12 font-${typography}`}
+                  >
+                    {selectedSections.map((sectionId) => (
+                      <div
+                        key={sectionId}
+                        id={`section-${sectionId}`}
+                        className="gamma-card group relative aspect-[16/9] w-full overflow-hidden rounded-2xl border bg-background shadow-xl ring-1 ring-border/50 cursor-pointer transition-all hover:ring-2 hover:ring-primary"
+                        onClick={() => setEditingSection(sectionId as SectionType)}
+                      >
+                        <div className="absolute inset-0 bg-background overflow-hidden flex flex-col justify-center">
                           {renderSection(sectionId as SectionType)}
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-            </div>
-          </main>
-        </SidebarInset>
-
-        <ContentEditor />
-
-        {/* Hidden PDF preview root for export */}
-        <div id="pdf-preview-root" style={{ display: "none" }}>
-          <SidebarInset className="bg-white text-black">
-            <main className="flex-1 p-8">
-              <div className="mx-auto max-w-5xl space-y-8">
-                {selectedSections.map((sectionId) => {
-                  return renderSection(sectionId as SectionType)
-                })}
-                <div className="text-center text-xs text-muted-foreground mt-8">Built with CPB</div>
+                    ))}
+                  </motion.div>
+                )}
               </div>
             </main>
           </SidebarInset>
+
+          <ContentEditor />
+
+          {/* Hidden PDF preview root for export */}
+          <div id="pdf-preview-root" style={{ display: "none" }}>
+            <SidebarInset className="bg-white text-black">
+              <main className="flex-1 p-8">
+                <div className="mx-auto max-w-5xl space-y-8">
+                  {selectedSections.map((sectionId) => {
+                    return renderSection(sectionId as SectionType)
+                  })}
+                  <div className="text-center text-xs text-muted-foreground mt-8">Built with CPB</div>
+                </div>
+              </main>
+            </SidebarInset>
+          </div>
         </div>
-      </div>
-    </SidebarProvider >
+      </SidebarProvider>
+      <CustomCssEditor open={cssEditorOpen} onClose={() => setCssEditorOpen(false)} />
+      <ResumePdfExport open={resumeExportOpen} onClose={() => setResumeExportOpen(false)} />
+    </>
   )
 }

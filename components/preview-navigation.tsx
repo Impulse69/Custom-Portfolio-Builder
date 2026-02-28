@@ -4,18 +4,20 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Home, User, FolderOpen, Mail, ArrowLeft, Menu, X, Moon, Sun, ChevronUp } from "lucide-react"
+import { Home, User, FolderOpen, Mail, ArrowLeft, Menu, X, Moon, Sun, ChevronUp, Briefcase, Smartphone, Tablet, Monitor } from "lucide-react"
 import { useTheme } from "next-themes"
 import Link from "next/link"
+import { usePortfolioStore } from "@/lib/portfolio-store"
 import type { SectionType } from "@/types/portfolio"
 
 interface PreviewNavigationProps {
   sections: SectionType[]
 }
 
-const sectionConfig = {
+const sectionConfig: Record<string, { name: string; icon: any }> = {
   hero: { name: "Home", icon: Home },
   about: { name: "About", icon: User },
+  services: { name: "Services", icon: Briefcase },
   projects: { name: "Projects", icon: FolderOpen },
   contact: { name: "Contact", icon: Mail },
 }
@@ -24,6 +26,7 @@ export function PreviewNavigation({ sections }: PreviewNavigationProps) {
   const [activeSection, setActiveSection] = useState<string>("")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const { previewMode, setPreviewMode } = usePortfolioStore()
   const { theme, setTheme } = useTheme()
 
   useEffect(() => {
@@ -109,6 +112,37 @@ export function PreviewNavigation({ sections }: PreviewNavigationProps) {
                   </Button>
                 )
               })}
+            </div>
+
+            {/* Responsive Toggles */}
+            <div className="hidden lg:flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+              <Button
+                variant={previewMode === "mobile" ? "secondary" : "ghost"}
+                size="icon"
+                className="h-7 w-7 rounded-md"
+                onClick={() => setPreviewMode("mobile")}
+                title="Mobile View"
+              >
+                <Smartphone className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={previewMode === "tablet" ? "secondary" : "ghost"}
+                size="icon"
+                className="h-7 w-7 rounded-md"
+                onClick={() => setPreviewMode("tablet")}
+                title="Tablet View"
+              >
+                <Tablet className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={previewMode === "desktop" ? "secondary" : "ghost"}
+                size="icon"
+                className="h-7 w-7 rounded-md"
+                onClick={() => setPreviewMode("desktop")}
+                title="Desktop View"
+              >
+                <Monitor className="h-4 w-4" />
+              </Button>
             </div>
 
             <div className="flex items-center gap-2">
