@@ -7,7 +7,6 @@ import { HeroSection } from "@/components/sections/hero-section"
 import { AboutSection } from "@/components/sections/about-section"
 import { ProjectsSection } from "@/components/sections/projects-section"
 import { ContactSection } from "@/components/sections/contact-section"
-import { ThemeProvider } from "@/components/theme-provider"
 import { usePortfolioStore } from "@/lib/portfolio-store"
 import type { SectionType } from "@/types/portfolio"
 
@@ -36,17 +35,14 @@ export default function PreviewPage() {
 
   if (isLoading) {
     return (
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </ThemeProvider>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     )
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
         <PreviewNavigation sections={selectedSections as SectionType[]} />
 
         <main className="relative">
@@ -80,7 +76,6 @@ export default function PreviewPage() {
             ))
           )}
         </main>
-      </div>
-    </ThemeProvider>
+    </div>
   )
 }

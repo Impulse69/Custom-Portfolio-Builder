@@ -413,7 +413,7 @@ const SCRIPT = `
   var root=document.documentElement;
   var stored=null;
   try{stored=localStorage.getItem('portfolio-theme')}catch(e){}
-  if(stored==='dark'||(!stored&&window.matchMedia('(prefers-color-scheme: dark)').matches)){root.setAttribute('data-theme','dark')}
+  if(stored==='dark'){root.setAttribute('data-theme','dark')}
   var toggle=document.getElementById('theme-toggle');
   if(toggle){toggle.addEventListener('click',function(){
     var dark=root.getAttribute('data-theme')==='dark';
