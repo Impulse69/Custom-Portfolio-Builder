@@ -1,12 +1,15 @@
 # ⚡ Custom Portfolio Builder
 
+[![CI](https://github.com/Impulse69/Custom-Portfolio-Builder/actions/workflows/ci.yml/badge.svg)](https://github.com/Impulse69/Custom-Portfolio-Builder/actions/workflows/ci.yml)
+
 A web-based, no-code portfolio builder built with **React**, **Next.js**, **TypeScript**, and **Tailwind CSS**. Assemble a professional single-page portfolio from modular sections — Hero, About, Projects, and Contact — edit everything live, and export a self-contained website you can host anywhere.
 
 ---
 
 ## 🚀 Features
 
-- 🧱 **Page structure panel** — add, remove, and reorder sections; click any section to edit it
+- 🧱 **Page structure panel** — add and remove sections, reorder them with **drag-and-drop**, click any section to edit it
+- 🖼️ **Project image uploads** — upload screenshots from your device; they're embedded in your portfolio and exports (or paste an image URL)
 - ✍️ **Live content editing** for all four sections, with changes saved automatically to your browser
 - 🖼️ **Real-time preview** in the builder, plus a full-screen preview mode (`/preview`)
 - 📦 **One-click export** — download your portfolio as a single self-contained HTML file (inline styles and icons, dark-mode toggle, working contact form) ready for GitHub Pages, Netlify, Vercel, or any static host
@@ -62,7 +65,7 @@ The sidebar is your control center:
 
 | Panel | What it does |
 | --- | --- |
-| **Page Structure** | The sections on your page, in visitor order. Click a section to edit it; use the arrows to reorder, ✏️ to edit, ✕ to remove (content is kept). |
+| **Page Structure** | The sections on your page, in visitor order. Click a section to edit it; drag the grip handle to reorder, ✏️ to edit, ✕ to remove (content is kept). |
 | **Add Sections** | Sections not yet on your page — one click adds them at the bottom. |
 | **Actions** | **Preview** full-screen, **Export** your site or backups, **Reset** to the example content (with confirmation). |
 

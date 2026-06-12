@@ -31,6 +31,24 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable"
+import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
+import { CSS } from "@dnd-kit/utilities"
 import dynamic from "next/dynamic"
 import { useTheme } from "next-themes"
 import { HeroSection } from "@/components/sections/hero-section"
@@ -64,8 +82,7 @@ const LucidePencil = dynamic(() => import("lucide-react").then((mod) => mod.Penc
 const LucideUpload = dynamic(() => import("lucide-react").then((mod) => mod.Upload), { ssr: false })
 const LucideFileCode = dynamic(() => import("lucide-react").then((mod) => mod.FileCode), { ssr: false })
 const LucideFileJson = dynamic(() => import("lucide-react").then((mod) => mod.FileJson), { ssr: false })
-const LucideChevronUp = dynamic(() => import("lucide-react").then((mod) => mod.ChevronUp), { ssr: false })
-const LucideChevronDown = dynamic(() => import("lucide-react").then((mod) => mod.ChevronDown), { ssr: false })
+const LucideGripVertical = dynamic(() => import("lucide-react").then((mod) => mod.GripVertical), { ssr: false })
 const LucidePlus = dynamic(() => import("lucide-react").then((mod) => mod.Plus), { ssr: false })
 const LucideX = dynamic(() => import("lucide-react").then((mod) => mod.X), { ssr: false })
 const LucideRotateCcw = dynamic(() => import("lucide-react").then((mod) => mod.RotateCcw), { ssr: false })
@@ -116,6 +133,90 @@ function SidebarGroupLabel({ label, hint }: { label: string; hint: string }) {
   )
 }
 
+function SortableSectionRow({
+  section,
+  isEditing,
+  onEdit,
+  onRemove,
+}: {
+  section: (typeof sections)[number]
+  isEditing: boolean
+  onEdit: () => void
+  onRemove: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
+  const Icon = section.icon
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`group relative flex items-center gap-0.5 rounded-lg border bg-card py-1 pl-0.5 pr-1.5 transition-colors ${
+        isEditing ? "border-primary ring-1 ring-primary" : "hover:border-muted-foreground/40"
+      } ${isDragging ? "z-10 opacity-90 shadow-md" : ""}`}
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            {...attributes}
+            {...listeners}
+            className="flex h-7 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground/60 hover:text-muted-foreground active:cursor-grabbing"
+            aria-label={`Reorder ${section.name}`}
+          >
+            <LucideGripVertical className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Drag to reorder (or press Space, then arrow keys)</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onEdit}
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-1.5 text-left text-sm font-medium hover:bg-muted"
+          >
+            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">{section.name}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          {isEditing ? "Close the content editor" : "Edit this section's content"}
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant={isEditing ? "default" : "ghost"}
+            size="icon"
+            className={`h-7 w-7 ${isEditing ? "" : "text-muted-foreground"}`}
+            onClick={onEdit}
+            aria-label={`Edit ${section.name} content`}
+          >
+            <LucidePencil className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Edit content</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            onClick={onRemove}
+            aria-label={`Remove ${section.name} from page`}
+          >
+            <LucideX className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Remove from page (content is kept)</TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
+
 export function PortfolioBuilder() {
   const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, importContent, resetToDefaults } = usePortfolioStore()
   const { resolvedTheme, setTheme } = useTheme()
@@ -156,14 +257,18 @@ export function PortfolioBuilder() {
     setEditingSection(editingSection === sectionId ? null : sectionId)
   }
 
-  const moveSection = (sectionId: string, direction: -1 | 1) => {
-    const index = selectedSections.indexOf(sectionId)
-    const target = index + direction
-    if (index === -1 || target < 0 || target >= selectedSections.length) return
-    const newSections = [...selectedSections]
-    newSections[index] = newSections[target]
-    newSections[target] = sectionId
-    setSelectedSections(newSections)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = selectedSections.indexOf(String(active.id))
+    const newIndex = selectedSections.indexOf(String(over.id))
+    if (oldIndex === -1 || newIndex === -1) return
+    setSelectedSections(arrayMove(selectedSections, oldIndex, newIndex))
   }
 
   const handleExportHtml = () => {
@@ -267,7 +372,7 @@ export function PortfolioBuilder() {
               <div>
                 <SidebarGroupLabel
                   label="PAGE STRUCTURE"
-                  hint="The sections currently on your page, in the order visitors will see them. Click a section to edit its content."
+                  hint="The sections currently on your page, in the order visitors will see them. Click a section to edit it, or drag the grip handle to reorder."
                 />
                 {selectedSections.length === 0 ? (
                   <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
@@ -276,100 +381,30 @@ export function PortfolioBuilder() {
                     Add your first section below.
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
-                    {selectedSections.map((sectionId, index) => {
-                      const section = sections.find((s) => s.id === sectionId)
-                      if (!section) return null
-                      const Icon = section.icon
-                      const isEditing = editingSection === section.id
-
-                      return (
-                        <div
-                          key={section.id}
-                          className={`group flex items-center gap-0.5 rounded-lg border bg-card py-1 pl-1 pr-1.5 transition-colors ${
-                            isEditing ? "border-primary ring-1 ring-primary" : "hover:border-muted-foreground/40"
-                          }`}
-                        >
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => handleEditSection(section.id)}
-                                className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-1.5 text-left text-sm font-medium hover:bg-muted"
-                              >
-                                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                                <span className="truncate">{section.name}</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                              {isEditing ? "Close the content editor" : "Edit this section's content"}
-                            </TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground"
-                                disabled={index === 0}
-                                onClick={() => moveSection(section.id, -1)}
-                                aria-label={`Move ${section.name} up`}
-                              >
-                                <LucideChevronUp className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">Move up</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground"
-                                disabled={index === selectedSections.length - 1}
-                                onClick={() => moveSection(section.id, 1)}
-                                aria-label={`Move ${section.name} down`}
-                              >
-                                <LucideChevronDown className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">Move down</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant={isEditing ? "default" : "ghost"}
-                                size="icon"
-                                className={`h-7 w-7 ${isEditing ? "" : "text-muted-foreground"}`}
-                                onClick={() => handleEditSection(section.id)}
-                                aria-label={`Edit ${section.name} content`}
-                              >
-                                <LucidePencil className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">Edit content</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => removeSection(section.id)}
-                                aria-label={`Remove ${section.name} from page`}
-                              >
-                                <LucideX className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">Remove from page (content is kept)</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      )
-                    })}
-                  </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext items={selectedSections} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-1.5">
+                        {selectedSections.map((sectionId) => {
+                          const section = sections.find((s) => s.id === sectionId)
+                          if (!section) return null
+                          return (
+                            <SortableSectionRow
+                              key={section.id}
+                              section={section}
+                              isEditing={editingSection === section.id}
+                              onEdit={() => handleEditSection(section.id)}
+                              onRemove={() => removeSection(section.id)}
+                            />
+                          )
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 )}
               </div>
 
@@ -378,7 +413,7 @@ export function PortfolioBuilder() {
               <div>
                 <SidebarGroupLabel
                   label="ADD SECTIONS"
-                  hint="Sections you can add to your page. New sections appear at the bottom — reorder them with the arrows above."
+                  hint="Sections you can add to your page. New sections appear at the bottom — drag the grip handle above to reorder them."
                 />
                 {availableSections.length === 0 ? (
                   <p className="rounded-lg bg-muted/50 p-3 text-center text-xs text-muted-foreground">
