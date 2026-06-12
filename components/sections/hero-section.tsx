@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Github, Linkedin, Mail, Download, ArrowRight, Twitter } from "lucide-react"
 import { motion } from "framer-motion"
 import type { HeroContent } from "@/lib/portfolio-store"
+import { initialsFromName } from "@/lib/utils"
 import dynamic from "next/dynamic"
 
 // Dynamically import Lucide icons with ssr: false
@@ -42,11 +43,11 @@ export function HeroSection({ content }: HeroSectionProps) {
             className="relative mx-auto w-48 h-48 rounded-full"
           >
             <Avatar className="w-full h-full">
-              {content.avatar.imageUrl ? (
+              {content.avatar.type === "image" && content.avatar.imageUrl ? (
                 <AvatarImage src={content.avatar.imageUrl} alt={content.name} />
               ) : null}
               <AvatarFallback className="text-6xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
-                {content.avatar.initials}
+                {content.avatar.initials || initialsFromName(content.name)}
               </AvatarFallback>
             </Avatar>
           </motion.div>

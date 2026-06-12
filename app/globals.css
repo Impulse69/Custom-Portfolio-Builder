@@ -96,6 +96,29 @@
   /* Remove the custom .line-clamp-2 utility if using Tailwind's plugin */
 }
 
+/* GitHub-style avatar cropper (overrides for react-image-crop).
+   Edge handles are already hidden by the library for fixed-aspect crops,
+   leaving the four corner handles, as on GitHub. */
+.ReactCrop {
+  --rc-drag-handle-size: 14px;
+  --rc-drag-handle-bg-colour: #fff;
+  --rc-border-color: rgb(255 255 255 / 0.9);
+}
+
+/* Solid selection border instead of the marching-ants animation.
+   !important is needed to beat the library's higher-specificity rule. */
+.ReactCrop .ReactCrop__crop-selection {
+  animation: none !important;
+  background-image: none !important;
+  border: 1px solid rgb(255 255 255 / 0.9);
+}
+
+.ReactCrop .ReactCrop__drag-handle {
+  border: 1px solid rgb(0 0 0 / 0.4);
+  border-radius: 2px;
+  box-shadow: 0 0 3px rgb(0 0 0 / 0.5);
+}
+
 /* Add smooth scrolling */
 html {
   scroll-behavior: smooth;

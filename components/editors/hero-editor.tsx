@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AvatarUpload } from "@/components/ui/avatar-upload"
 import { usePortfolioStore, type HeroContent } from "@/lib/portfolio-store"
+import { initialsFromName } from "@/lib/utils"
 
 export function HeroEditor() {
   const { content, updateHeroContent } = usePortfolioStore()
@@ -96,6 +97,7 @@ export function HeroEditor() {
             <AvatarUpload
               value={formData.avatar}
               onChange={(value) => handleAvatarChange(value)}
+              fallbackInitials={initialsFromName(formData.name)}
             />
           </div>
 

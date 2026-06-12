@@ -76,11 +76,21 @@ function projectImage(image: string, title: string): string {
   return `<img class="project-image" src="${esc(image)}" alt="${esc(title)}" loading="lazy" />`
 }
 
+function initialsFromName(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+}
+
 function renderHero(hero: HeroContent, hasProjects: boolean, hasContact: boolean): string {
   const avatar =
     hero.avatar.type === "image" && hero.avatar.imageUrl
       ? `<img class="avatar" src="${esc(hero.avatar.imageUrl)}" alt="${esc(hero.name)}" />`
-      : `<div class="avatar avatar-initials">${esc(hero.avatar.initials || "")}</div>`
+      : `<div class="avatar avatar-initials">${esc(hero.avatar.initials || initialsFromName(hero.name))}</div>`
 
   const primaryTarget = hasProjects ? "#projects" : hasContact ? "#contact" : "#hero"
   const ctas: string[] = []
@@ -490,7 +500,7 @@ export function generatePortfolioHtml(content: PortfolioContent, selectedSection
 <body>
   <nav>
     <div class="container nav-inner">
-      <a class="nav-brand" href="#${sections[0] ?? "hero"}">${esc(content.hero.avatar.initials || content.hero.name)}</a>
+      <a class="nav-brand" href="#${sections[0] ?? "hero"}">${esc(content.hero.avatar.initials || initialsFromName(content.hero.name) || content.hero.name)}</a>
       <div class="nav-links" id="nav-links">
         ${navLinks}
       </div>
