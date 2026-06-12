@@ -141,6 +141,14 @@ export function HeroEditor() {
               onChange={(e) => handleChange("ctaSecondary", e.target.value)}
               placeholder="Download CV"
             />
+            <Label htmlFor="ctaSecondaryHref">Secondary Button Link (e.g. CV file URL)</Label>
+            <Input
+              id="ctaSecondaryHref"
+              type="url"
+              value={formData.ctaSecondaryHref || ""}
+              onChange={(e) => handleChange("ctaSecondaryHref", e.target.value)}
+              placeholder="https://example.com/my-cv.pdf"
+            />
             <div className="flex items-center space-x-2 mt-2">
               <Switch
                 id="ctaSecondaryEnabled"

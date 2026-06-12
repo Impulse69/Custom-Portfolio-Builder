@@ -7,9 +7,8 @@ import { X, Settings } from "lucide-react"
 import { usePortfolioStore } from "@/lib/portfolio-store"
 import { HeroEditor } from "@/components/editors/hero-editor"
 import { AboutEditor } from "@/components/editors/about-editor"
-// import { ProjectsEditor } from "@/components/editors/projects-editor"
+import { ProjectsEditor } from "@/components/editors/projects-editor"
 import { ContactEditor } from "@/components/editors/contact-editor"
-// import { ContactEditor } from "@/components/editors/contact-editor"
 
 const sectionNames = {
   hero: "Hero Section",
@@ -30,7 +29,7 @@ export function ContentEditor() {
       case "about":
         return <AboutEditor />
       case "projects":
-        return <div className="p-4 text-center text-muted-foreground">Projects editor coming soon...</div>
+        return <ProjectsEditor />
       case "contact":
         return <ContactEditor />
       default:

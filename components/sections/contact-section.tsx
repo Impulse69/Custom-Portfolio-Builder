@@ -28,8 +28,10 @@ export function ContactSection({ content }: ContactSectionProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log("Form submitted:", formData)
+    // Compose the message in the visitor's email client
+    const subject = encodeURIComponent(formData.subject)
+    const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\n${formData.message}`)
+    window.location.href = `mailto:${content.email}?subject=${subject}&body=${body}`
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
