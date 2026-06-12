@@ -15,7 +15,7 @@ A web-based, no-code portfolio builder built with **React**, **Next.js**, **Type
 - 💡 **Hover hints everywhere** — every control explains itself
 - ☀️ **Light mode by default**, with a dark mode toggle in the builder, preview, and exported site
 - 📱 Fully responsive, including the content editor
-- 🖼️ Optional **avatar upload** backed by Supabase storage (the app works fully without it)
+- 🖼️ **Avatar photo upload with crop, zoom and rotation** — works with zero setup (the image is embedded in your portfolio); optionally hosted via Supabase storage if configured
 
 ---
 
@@ -42,7 +42,17 @@ pnpm dev
 
 Open http://localhost:3000 and start building.
 
-**Optional — avatar uploads:** copy `.env.example` to `.env.local` and fill in your Supabase project values. Without them, the avatar upload API returns a clear error and you can use initials avatars instead.
+**Optional — hosted avatar uploads:** copy `.env.example` to `.env.local` and fill in your Supabase project values to store avatar photos in Supabase. Without them, uploaded photos are simply embedded in your portfolio — everything still works.
+
+### Scripts
+
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Start the development server |
+| `pnpm build` | Production build (includes type checking and linting) |
+| `pnpm start` | Serve the production build |
+| `pnpm lint` | Run ESLint (`next/core-web-vitals`) |
+| `pnpm test` | Run the unit tests (Vitest) |
 
 ---
 

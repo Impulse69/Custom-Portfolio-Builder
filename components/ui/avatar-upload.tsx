@@ -12,12 +12,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
 import Cropper from 'react-easy-crop'
 import type { Area } from 'react-easy-crop'
 import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
+import { useToast } from '@/hooks/use-toast'
 
 interface AvatarUploadProps {
   value: {
@@ -29,41 +30,65 @@ interface AvatarUploadProps {
   className?: string
 }
 
+// Keep stored avatars small: plenty for a 192px display circle, and small
+// enough to embed as a data URL when no upload backend is configured.
+const OUTPUT_SIZE = 512
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB source file
+
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image()
     image.addEventListener('load', () => resolve(image))
     image.addEventListener('error', (error) => reject(error))
-    image.setAttribute('crossOrigin', 'anonymous') // Needed for cross-origin images
+    image.setAttribute('crossOrigin', 'anonymous')
     image.src = url
   })
 
-const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob | null> => {
+// Rotation-aware crop (react-easy-crop's documented recipe): draw the rotated
+// image onto a bounding-box canvas, then cut the crop area out of that.
+const getCroppedCanvas = async (
+  imageSrc: string,
+  pixelCrop: Area,
+  rotation: number,
+): Promise<HTMLCanvasElement> => {
   const image = await createImage(imageSrc)
+  const rotRad = (rotation * Math.PI) / 180
+
+  const bBoxWidth = Math.abs(Math.cos(rotRad) * image.width) + Math.abs(Math.sin(rotRad) * image.height)
+  const bBoxHeight = Math.abs(Math.sin(rotRad) * image.width) + Math.abs(Math.cos(rotRad) * image.height)
+
   const canvas = document.createElement('canvas')
+  canvas.width = bBoxWidth
+  canvas.height = bBoxHeight
   const ctx = canvas.getContext('2d')
-  if (!ctx) return null
-  const scaleX = image.naturalWidth / image.width
-  const scaleY = image.naturalHeight / image.height
-  canvas.width = pixelCrop.width
-  canvas.height = pixelCrop.height
-  ctx.drawImage(
-    image,
-    pixelCrop.x * scaleX,
-    pixelCrop.y * scaleY,
-    pixelCrop.width * scaleX,
-    pixelCrop.height * scaleY,
-    0,
-    0,
+  if (!ctx) throw new Error('Canvas is not supported in this browser.')
+  ctx.translate(bBoxWidth / 2, bBoxHeight / 2)
+  ctx.rotate(rotRad)
+  ctx.translate(-image.width / 2, -image.height / 2)
+  ctx.drawImage(image, 0, 0)
+
+  const output = document.createElement('canvas')
+  const size = Math.min(OUTPUT_SIZE, pixelCrop.width)
+  output.width = size
+  output.height = size
+  const outputCtx = output.getContext('2d')
+  if (!outputCtx) throw new Error('Canvas is not supported in this browser.')
+  outputCtx.drawImage(
+    canvas,
+    pixelCrop.x,
+    pixelCrop.y,
     pixelCrop.width,
-    pixelCrop.height
+    pixelCrop.height,
+    0,
+    0,
+    size,
+    size,
   )
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(blob)
-    }, 'image/png')
-  })
+  return output
 }
+
+const canvasToBlob = (canvas: HTMLCanvasElement): Promise<Blob | null> =>
+  new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9))
 
 export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
@@ -73,53 +98,85 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
   const [rotation, setRotation] = useState(0)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+  const { toast } = useToast()
+
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
   }, [])
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
+    event.target.value = ''
     if (!file) return
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Only JPG, PNG, and WebP are allowed.')
+      toast({
+        title: 'Unsupported file type',
+        description: 'Please choose a JPG, PNG, or WebP image.',
+        variant: 'destructive',
+      })
       return
     }
-    const reader = new FileReader()
-    reader.onload = () => {
-      setImageSrc(reader.result as string)
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'File too large',
+        description: 'Please choose an image under 10MB.',
+        variant: 'destructive',
+      })
+      return
     }
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setRotation(0)
+    const reader = new FileReader()
+    reader.onload = () => setImageSrc(reader.result as string)
     reader.readAsDataURL(file)
+  }
+
+  // Try the Supabase upload endpoint for a hosted URL; if it isn't configured
+  // (or fails), embed the image directly so the feature works without any setup.
+  const uploadOrEmbed = async (canvas: HTMLCanvasElement): Promise<{ url: string; hosted: boolean }> => {
+    const blob = await canvasToBlob(canvas)
+    if (blob) {
+      try {
+        const formData = new FormData()
+        formData.append('file', blob, 'avatar.jpg')
+        const response = await fetch('/api/upload-avatar', { method: 'POST', body: formData })
+        if (response.ok) {
+          const result = await response.json()
+          if (result.imageUrl) return { url: result.imageUrl, hosted: true }
+        }
+      } catch {
+        // Fall through to the embedded data URL
+      }
+    }
+    return { url: canvas.toDataURL('image/jpeg', 0.9), hosted: false }
   }
 
   const handleSaveCroppedImage = async () => {
     if (!imageSrc || !croppedAreaPixels) return
     setIsUploading(true)
     try {
-      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels)
-      if (!croppedBlob) {
-        throw new Error('Failed to crop image.')
-      }
-      const formData = new FormData()
-      formData.append('file', croppedBlob, 'avatar.png')
-      const response = await fetch('/api/upload-avatar', {
-        method: 'POST',
-        body: formData,
-      })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Upload failed')
-      }
-      const result = await response.json()
+      const canvas = await getCroppedCanvas(imageSrc, croppedAreaPixels, rotation)
+      const { url, hosted } = await uploadOrEmbed(canvas)
       onChange({
         type: 'image',
-        imageUrl: result.imageUrl,
+        imageUrl: url,
         initials: value.initials,
       })
       setImageSrc(null)
+      toast({
+        title: 'Avatar updated',
+        description: hosted
+          ? 'Your photo was uploaded and added to the portfolio.'
+          : 'Your photo was saved with the portfolio (no upload service configured — it is embedded directly).',
+      })
     } catch (error) {
-      console.error('Upload error:', error)
-      alert(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast({
+        title: 'Could not save image',
+        description: error instanceof Error ? error.message : 'Something went wrong while cropping the image.',
+        variant: 'destructive',
+      })
     } finally {
       setIsUploading(false)
     }
@@ -162,7 +219,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
             {value.initials}
           </AvatarFallback>
         </Avatar>
-        
+
         {isUploading && (
           <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-white" />
@@ -192,7 +249,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
               <Upload className="h-4 w-4 mr-2" />
               Upload Image
             </Button>
-            
+
             {value.imageUrl && (
               <Button
                 type="button"
@@ -231,10 +288,11 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
         className="hidden"
       />
 
-      <Dialog open={!!imageSrc} onOpenChange={() => setImageSrc(null)}>
-        <DialogContent className="sm:max-w-[425px] h-[500px] flex flex-col p-0">
+      <Dialog open={!!imageSrc} onOpenChange={(open) => !open && setImageSrc(null)}>
+        <DialogContent className="sm:max-w-[425px] h-[540px] flex flex-col p-0">
           <DialogHeader className="p-6 pb-4">
-            <DialogTitle>Crop Image</DialogTitle>
+            <DialogTitle>Crop your photo</DialogTitle>
+            <DialogDescription>Drag to position, then adjust zoom and rotation.</DialogDescription>
           </DialogHeader>
           <div className="relative flex-1 bg-gray-900">
             <Cropper
@@ -259,7 +317,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
           </div>
           <DialogFooter className="flex flex-col gap-4 p-6 pt-4">
             <div className="flex items-center gap-4">
-              <Label htmlFor="zoom">Zoom</Label>
+              <Label htmlFor="zoom" className="w-16">Zoom</Label>
               <Input
                 id="zoom"
                 type="range"
@@ -272,7 +330,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
               />
             </div>
             <div className="flex items-center gap-4">
-              <Label htmlFor="rotation">Rotation</Label>
+              <Label htmlFor="rotation" className="w-16">Rotation</Label>
               <Input
                 id="rotation"
                 type="range"
@@ -291,7 +349,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
                   Saving...
                 </>
               ) : (
-                'Save Cropped Image'
+                'Save photo'
               )}
             </Button>
           </DialogFooter>

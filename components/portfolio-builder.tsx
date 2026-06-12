@@ -49,7 +49,7 @@ import type { SectionType } from "@/types/portfolio"
 import Link from "next/link"
 import { ClientOnly } from "@/components/client-only"
 import { useToast } from "@/hooks/use-toast"
-import { useRef, type ChangeEvent } from "react"
+import { useEffect, useRef, useState, type ChangeEvent } from "react"
 
 const LucideUser = dynamic(() => import("lucide-react").then((mod) => mod.User), { ssr: false })
 const LucideHome = dynamic(() => import("lucide-react").then((mod) => mod.Home), { ssr: false })
@@ -121,6 +121,12 @@ export function PortfolioBuilder() {
   const { resolvedTheme, setTheme } = useTheme()
   const { toast } = useToast()
   const importInputRef = useRef<HTMLInputElement | null>(null)
+
+  // The store is persisted in localStorage, so the server-rendered defaults
+  // can differ from the user's saved state. Render after mount to avoid a
+  // hydration mismatch and a flash of example content.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const isDark = resolvedTheme === "dark"
 
@@ -231,6 +237,14 @@ export function PortfolioBuilder() {
   }
 
   const availableSections = sections.filter((section) => !selectedSections.includes(section.id))
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+      </div>
+    )
+  }
 
   return (
     <SidebarProvider>

@@ -265,12 +265,12 @@ export function ContactSection({ content }: ContactSectionProps) {
             <Card className="p-6 bg-primary/5 border-primary/20">
               <div className="text-center">
                 <h4 className="font-bold mb-2">Ready to start a project?</h4>
-                <p className="text-muted-foreground mb-4">I'm available for freelance work and new opportunities.</p>
+                <p className="text-muted-foreground mb-4">I&apos;m available for freelance work and new opportunities.</p>
                 {content.emailEnabled && (
                   <Button asChild>
                     <a href={`mailto:${content.email}`}>
                       <Mail className="mr-2 h-4 w-4" />
-                      Let's Talk
+                      Let&apos;s Talk
                     </a>
                   </Button>
                 )}
