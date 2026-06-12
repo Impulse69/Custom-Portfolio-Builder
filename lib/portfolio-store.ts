@@ -11,6 +11,7 @@ export interface HeroContent {
   ctaPrimaryEnabled: boolean
   ctaSecondary: string
   ctaSecondaryEnabled: boolean
+  ctaSecondaryHref?: string
   avatar: {
     type: 'image' | 'initials'
     imageUrl?: string
@@ -103,6 +104,7 @@ interface PortfolioStore {
   deleteProject: (id: string) => void
   setSelectedSections: (sections: string[]) => void
   setEditingSection: (section: string | null) => void
+  importContent: (content: PortfolioContent) => void
   resetToDefaults: () => void
 }
 
@@ -118,6 +120,7 @@ const defaultContent: PortfolioContent = {
     ctaPrimaryEnabled: true,
     ctaSecondary: "Download CV",
     ctaSecondaryEnabled: true,
+    ctaSecondaryHref: "",
     avatar: {
       type: 'initials',
       initials: "JD",
@@ -313,9 +316,13 @@ export const usePortfolioStore = create<PortfolioStore>()(
 
       setEditingSection: (section) => set({ editingSection: section }),
 
-      resetToDefaults: () => set({ content: defaultContent }),
+      importContent: (content) => set({ content }),
 
-      onRehydrateStorage: (state: PortfolioStore) => {
+      resetToDefaults: () => set({ content: defaultContent }),
+    }),
+    {
+      name: "portfolio-content",
+      onRehydrateStorage: () => (state) => {
         if (state) {
           // Ensure avatar structure and initials are always valid
           if (!state.content.hero.avatar) {
@@ -328,9 +335,6 @@ export const usePortfolioStore = create<PortfolioStore>()(
           }
         }
       },
-    }),
-    {
-      name: "portfolio-content",
     },
   ),
 )

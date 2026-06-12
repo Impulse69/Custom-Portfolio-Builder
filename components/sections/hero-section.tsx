@@ -92,17 +92,27 @@ export function HeroSection({ content }: HeroSectionProps) {
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             {content.ctaPrimaryEnabled && (
-              <Button size="lg" className="group">
-                {content.ctaPrimary}
-                <LucideArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <Button size="lg" className="group" asChild>
+                <a href="#projects">
+                  {content.ctaPrimary}
+                  <LucideArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </a>
               </Button>
             )}
-            {content.ctaSecondaryEnabled && (
-              <Button variant="outline" size="lg">
-                <LucideDownload className="mr-2 h-4 w-4" />
-                {content.ctaSecondary}
-              </Button>
-            )}
+            {content.ctaSecondaryEnabled &&
+              (content.ctaSecondaryHref ? (
+                <Button variant="outline" size="lg" asChild>
+                  <a href={content.ctaSecondaryHref} target="_blank" rel="noopener noreferrer">
+                    <LucideDownload className="mr-2 h-4 w-4" />
+                    {content.ctaSecondary}
+                  </a>
+                </Button>
+              ) : (
+                <Button variant="outline" size="lg">
+                  <LucideDownload className="mr-2 h-4 w-4" />
+                  {content.ctaSecondary}
+                </Button>
+              ))}
           </motion.div>
 
           <motion.div

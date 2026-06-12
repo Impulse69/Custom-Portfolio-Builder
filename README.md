@@ -6,10 +6,13 @@ A web-based, no-code portfolio builder built with **React**, **Next.js**, **Type
 
 ## 🚀 Features
 
-- ⚙️ Drag-and-drop layout (manual placement for now)
-- ✍️ Live content editing with section forms
+- ⚙️ Section toggling with **page order controls** (move sections up/down)
+- ✍️ Live content editing with section forms for **all four sections** (Hero, About, Projects, Contact)
 - 🖼️ Real-time preview in builder and full preview mode (`/preview`)
-- 🌙 Dark mode support
+- 📦 **Export your portfolio as a standalone HTML file** — a single self-contained file (no dependencies) ready to host anywhere (GitHub Pages, Netlify, any static host)
+- 💾 **Backup & restore** your portfolio data as JSON
+- 📨 Working contact form (composes an email to your address) and CV download link
+- 🌙 Dark mode support (in the builder *and* in the exported site)
 - 📱 Fully responsive design
 - 💨 Tailwind CSS for modern styling
 - 🧩 Modular components: easy to extend or style
@@ -82,14 +85,25 @@ pnpm run build
   /preview           -> Portfolio preview page
 /components          -> Reusable UI components
   /sections          -> Portfolio section components
-  /editors           -> Content editing forms
+  /editors           -> Content editing forms (hero, about, projects, contact)
   /ui                -> shadcn/ui components
 /lib                 -> Utilities and store
-  /portfolio-store.ts -> Zustand state management
-  /utils.ts          -> Utility functions
+  /portfolio-store.ts   -> Zustand state management
+  /export-portfolio.ts  -> Standalone HTML export + JSON backup/restore
+  /utils.ts             -> Utility functions
 /types               -> TypeScript type definitions
 /public              -> Static assets
 ```
+
+---
+
+## 📦 Exporting Your Portfolio
+
+When you're happy with your portfolio, use the **Export** menu in the sidebar:
+
+- **Download website (HTML):** generates a single, fully self-contained `your-name.html` file — inline styles, inline icons, dark-mode toggle, working contact form (opens the visitor's email client), and smooth-scroll navigation. Drop it on GitHub Pages, Netlify, Vercel, or any static host and it just works.
+- **Backup data (JSON):** downloads everything you've entered (content + section layout) as `portfolio-backup.json`.
+- **Import backup (JSON):** restores a previously saved backup, including the section order.
 
 ---
 

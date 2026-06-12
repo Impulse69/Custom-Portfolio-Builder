@@ -13,6 +13,12 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import dynamic from "next/dynamic"
 import { useTheme } from "next-themes"
 import { HeroSection } from "@/components/sections/hero-section"
@@ -21,11 +27,17 @@ import { ProjectsSection } from "@/components/sections/projects-section"
 import { ContactSection } from "@/components/sections/contact-section"
 import { ContentEditor } from "@/components/content-editor"
 import { usePortfolioStore } from "@/lib/portfolio-store"
+import {
+  generatePortfolioHtml,
+  buildPortfolioExport,
+  parsePortfolioJson,
+  downloadFile,
+} from "@/lib/export-portfolio"
 import type { SectionType } from "@/types/portfolio"
 import Link from "next/link"
 import { ClientOnly } from "@/components/client-only"
 import { useToast } from "@/hooks/use-toast"
-import { useRef } from "react"
+import { useRef, type ChangeEvent } from "react"
 
 const LucideUser = dynamic(() => import("lucide-react").then((mod) => mod.User), { ssr: false })
 const LucideHome = dynamic(() => import("lucide-react").then((mod) => mod.Home), { ssr: false })
@@ -37,6 +49,11 @@ const LucidePalette = dynamic(() => import("lucide-react").then((mod) => mod.Pal
 const LucideEye = dynamic(() => import("lucide-react").then((mod) => mod.Eye), { ssr: false })
 const LucideDownload = dynamic(() => import("lucide-react").then((mod) => mod.Download), { ssr: false })
 const LucideSettings = dynamic(() => import("lucide-react").then((mod) => mod.Settings), { ssr: false })
+const LucideUpload = dynamic(() => import("lucide-react").then((mod) => mod.Upload), { ssr: false })
+const LucideFileCode = dynamic(() => import("lucide-react").then((mod) => mod.FileCode), { ssr: false })
+const LucideFileJson = dynamic(() => import("lucide-react").then((mod) => mod.FileJson), { ssr: false })
+const LucideChevronUp = dynamic(() => import("lucide-react").then((mod) => mod.ChevronUp), { ssr: false })
+const LucideChevronDown = dynamic(() => import("lucide-react").then((mod) => mod.ChevronDown), { ssr: false })
 
 const sections = [
   {
@@ -66,10 +83,11 @@ const sections = [
 ]
 
 export function PortfolioBuilder() {
-  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, resetToDefaults } = usePortfolioStore()
+  const { selectedSections, setSelectedSections, editingSection, setEditingSection, content, importContent, resetToDefaults } = usePortfolioStore()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
   const dialogRef = useRef<HTMLDialogElement | null>(null)
+  const importInputRef = useRef<HTMLInputElement | null>(null)
 
   const toggleSection = (sectionId: SectionType) => {
     const wasSelected = selectedSections.includes(sectionId)
@@ -95,6 +113,65 @@ export function PortfolioBuilder() {
 
   const handleEditSection = (sectionId: SectionType) => {
     setEditingSection(editingSection === sectionId ? null : sectionId)
+  }
+
+  const moveSection = (sectionId: string, direction: -1 | 1) => {
+    const index = selectedSections.indexOf(sectionId)
+    const target = index + direction
+    if (index === -1 || target < 0 || target >= selectedSections.length) return
+    const newSections = [...selectedSections]
+    newSections[index] = newSections[target]
+    newSections[target] = sectionId
+    setSelectedSections(newSections)
+  }
+
+  const handleExportHtml = () => {
+    if (selectedSections.length === 0) {
+      toast({
+        title: "Nothing to export",
+        description: "Add at least one section to your portfolio first.",
+        variant: "destructive",
+      })
+      return
+    }
+    const html = generatePortfolioHtml(content, selectedSections)
+    const filename = `${content.hero.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "portfolio"}.html`
+    downloadFile(filename, html, "text/html")
+    toast({
+      title: "Portfolio exported",
+      description: `${filename} is ready — open it in a browser or host it anywhere.`,
+    })
+  }
+
+  const handleExportJson = () => {
+    const data = buildPortfolioExport(content, selectedSections)
+    downloadFile("portfolio-backup.json", JSON.stringify(data, null, 2), "application/json")
+    toast({
+      title: "Backup saved",
+      description: "Your portfolio data was downloaded as portfolio-backup.json.",
+    })
+  }
+
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file) return
+    try {
+      const data = parsePortfolioJson(await file.text())
+      importContent(data.content)
+      setSelectedSections(data.selectedSections)
+      setEditingSection(null)
+      toast({
+        title: "Portfolio imported",
+        description: "Your portfolio was restored from the backup file.",
+      })
+    } catch (error) {
+      toast({
+        title: "Import failed",
+        description: error instanceof Error ? error.message : "The file could not be read.",
+        variant: "destructive",
+      })
+    }
   }
 
   const renderSection = (sectionId: SectionType) => {
@@ -194,6 +271,47 @@ export function PortfolioBuilder() {
                 </SidebarMenu>
               </div>
 
+              {selectedSections.length > 1 && (
+                <>
+                  <Separator />
+
+                  <div>
+                    <h3 className="mb-3 text-sm font-medium text-muted-foreground">PAGE ORDER</h3>
+                    <div className="space-y-1">
+                      {selectedSections.map((sectionId, index) => {
+                        const section = sections.find((s) => s.id === sectionId)
+                        if (!section) return null
+                        return (
+                          <div key={sectionId} className="flex items-center gap-2 rounded-md border px-2 py-1.5">
+                            <span className="flex-1 text-sm">{section.name}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              disabled={index === 0}
+                              onClick={() => moveSection(sectionId, -1)}
+                              aria-label={`Move ${section.name} up`}
+                            >
+                              <LucideChevronUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              disabled={index === selectedSections.length - 1}
+                              onClick={() => moveSection(sectionId, 1)}
+                              aria-label={`Move ${section.name} down`}
+                            >
+                              <LucideChevronDown className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
               <Separator />
 
               <div className="space-y-2">
@@ -205,10 +323,35 @@ export function PortfolioBuilder() {
                       Preview
                     </Link>
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <LucideDownload className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start">
+                        <LucideDownload className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56">
+                      <DropdownMenuItem onClick={handleExportHtml}>
+                        <LucideFileCode className="h-4 w-4 mr-2" />
+                        Download website (HTML)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportJson}>
+                        <LucideFileJson className="h-4 w-4 mr-2" />
+                        Backup data (JSON)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => importInputRef.current?.click()}>
+                        <LucideUpload className="h-4 w-4 mr-2" />
+                        Import backup (JSON)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    onChange={handleImportFile}
+                  />
                   <Button
                     variant="ghost"
                     size="sm"

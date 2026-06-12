@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { motion } from "framer-motion"
-import { ExternalLink, Github, ArrowRight } from "lucide-react"
+import { ExternalLink, Github } from "lucide-react"
 import Image from "next/image"
 import type { ProjectsContent } from "@/lib/portfolio-store"
 
@@ -151,13 +151,6 @@ export function ProjectsSection({ content }: ProjectsSectionProps) {
                   </Card>
                 </motion.div>
               ))}
-            </div>
-
-            <div className="text-center">
-              <Button variant="outline" size="lg" className="group">
-                View All Projects
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Button>
             </div>
           </motion.div>
         )}
