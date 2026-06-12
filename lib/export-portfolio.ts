@@ -413,7 +413,7 @@ const SCRIPT = `
   var root=document.documentElement;
   var stored=null;
   try{stored=localStorage.getItem('portfolio-theme')}catch(e){}
-  if(stored==='dark'||(!stored&&window.matchMedia('(prefers-color-scheme: dark)').matches)){root.setAttribute('data-theme','dark')}
+  if(stored==='dark'){root.setAttribute('data-theme','dark')}
   var toggle=document.getElementById('theme-toggle');
   if(toggle){toggle.addEventListener('click',function(){
     var dark=root.getAttribute('data-theme')==='dark';
@@ -481,6 +481,10 @@ export function generatePortfolioHtml(content: PortfolioContent, selectedSection
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${esc(title)}</title>
   <meta name="description" content="${esc(content.hero.description)}" />
+  <meta property="og:title" content="${esc(title)}" />
+  <meta property="og:description" content="${esc(content.hero.description)}" />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#ffffff" />
   <style>${STYLES}</style>
 </head>
 <body>

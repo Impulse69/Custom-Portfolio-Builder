@@ -1,184 +1,128 @@
 # ⚡ Custom Portfolio Builder
 
-A web-based, no-code portfolio builder built with **React**, **Next.js**, **TypeScript**, and **Tailwind CSS**. This app allows users to assemble a professional single-page portfolio by selecting and customizing modular sections such as Hero, About, Projects, and Contact. 
+[![CI](https://github.com/Impulse69/Custom-Portfolio-Builder/actions/workflows/ci.yml/badge.svg)](https://github.com/Impulse69/Custom-Portfolio-Builder/actions/workflows/ci.yml)
+
+A web-based, no-code portfolio builder built with **React**, **Next.js**, **TypeScript**, and **Tailwind CSS**. Assemble a professional single-page portfolio from modular sections — Hero, About, Projects, and Contact — edit everything live, and export a self-contained website you can host anywhere.
 
 ---
 
 ## 🚀 Features
 
-- ⚙️ Section toggling with **page order controls** (move sections up/down)
-- ✍️ Live content editing with section forms for **all four sections** (Hero, About, Projects, Contact)
-- 🖼️ Real-time preview in builder and full preview mode (`/preview`)
-- 📦 **Export your portfolio as a standalone HTML file** — a single self-contained file (no dependencies) ready to host anywhere (GitHub Pages, Netlify, any static host)
-- 💾 **Backup & restore** your portfolio data as JSON
-- 📨 Working contact form (composes an email to your address) and CV download link
-- 🌙 Dark mode support (in the builder *and* in the exported site)
-- 📱 Fully responsive design
-- 💨 Tailwind CSS for modern styling
-- 🧩 Modular components: easy to extend or style
-- ⚡ Built with Next.js for performance and routing
-- 🖼️ **Avatar upload with Supabase storage**
-- 🔧 **Robust error handling and environment variable management**
+- 🧱 **Page structure panel** — add and remove sections, reorder them with **drag-and-drop**, click any section to edit it
+- 🖼️ **Project image uploads** — upload screenshots from your device; they're embedded in your portfolio and exports (or paste an image URL)
+- ✍️ **Live content editing** for all four sections, with changes saved automatically to your browser
+- 🖼️ **Real-time preview** in the builder, plus a full-screen preview mode (`/preview`)
+- 📦 **One-click export** — download your portfolio as a single self-contained HTML file (inline styles and icons, dark-mode toggle, working contact form) ready for GitHub Pages, Netlify, Vercel, or any static host
+- 💾 **Backup & restore** — save all your content and layout as JSON and import it later
+- 📨 **Working contact form** (composes an email to your address) and configurable CV download link
+- 💡 **Hover hints everywhere** — every control explains itself
+- ☀️ **Light mode by default**, with a dark mode toggle in the builder, preview, and exported site
+- 📱 Fully responsive, including the content editor
+- 🖼️ **Avatar photo upload with crop, zoom and rotation** — works with zero setup (the image is embedded in your portfolio); optionally hosted via Supabase storage if configured
 
 ---
 
 ## 🧱 Tech Stack
 
-- **Framework:** Next.js 14.2.16
-- **Language:** TypeScript 5.8.3
-- **Styling:** Tailwind CSS 3.4.17
-- **State Management:** Zustand 5.0.5
-- **UI Components:** Radix UI + shadcn/ui
-- **Storage:** Supabase (for avatar uploads)
-- **Package Manager:** pnpm
-- **Deployment:** Ready for Vercel
+- **Framework:** Next.js 14
+- **Language:** TypeScript 5
+- **Styling:** Tailwind CSS 3
+- **State:** Zustand (persisted to localStorage)
+- **UI:** Radix UI + shadcn/ui, Framer Motion, Lucide icons
+- **Storage (optional):** Supabase, for avatar uploads
+- **Package manager:** pnpm
 
 ---
 
 ## 🧪 Getting Started
 
-1. **Clone the repository**
-
 ```bash
 git clone https://github.com/Impulse69/Custom-Portfolio-Builder.git
-cd portfolio-builder
-```
-
-2. **Install dependencies**
-
-```bash
+cd Custom-Portfolio-Builder
 pnpm install
+pnpm dev
 ```
 
-3. **Set up environment variables** (optional for avatar uploads)
+Open http://localhost:3000 and start building.
 
-Create a `.env.local` file in the root directory:
+**Optional — hosted avatar uploads:** copy `.env.example` to `.env.local` and fill in your Supabase project values to store avatar photos in Supabase. Without them, uploaded photos are simply embedded in your portfolio — everything still works.
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_AVATAR_BUCKET=avatars
-```
+### Scripts
 
-4. **Run the development server**
-
-```bash
-pnpm run dev
-```
-
-5. **Build for production**
-
-```bash
-pnpm run build
-```
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Start the development server |
+| `pnpm build` | Production build (includes type checking and linting) |
+| `pnpm start` | Serve the production build |
+| `pnpm lint` | Run ESLint (`next/core-web-vitals`) |
+| `pnpm test` | Run the unit tests (Vitest) |
 
 ---
 
-## 📁 Folder Structure
+## 🧭 How It Works
 
-```
-/app                 -> Next.js 13+ app directory
-  /api               -> API routes (upload-avatar)
-  /globals.css       -> Global styles and Tailwind config
-  /layout.tsx        -> Root layout
-  /page.tsx          -> Main builder page
-  /preview           -> Portfolio preview page
-/components          -> Reusable UI components
-  /sections          -> Portfolio section components
-  /editors           -> Content editing forms (hero, about, projects, contact)
-  /ui                -> shadcn/ui components
-/lib                 -> Utilities and store
-  /portfolio-store.ts   -> Zustand state management
-  /export-portfolio.ts  -> Standalone HTML export + JSON backup/restore
-  /utils.ts             -> Utility functions
-/types               -> TypeScript type definitions
-/public              -> Static assets
-```
+The sidebar is your control center:
+
+| Panel | What it does |
+| --- | --- |
+| **Page Structure** | The sections on your page, in visitor order. Click a section to edit it; drag the grip handle to reorder, ✏️ to edit, ✕ to remove (content is kept). |
+| **Add Sections** | Sections not yet on your page — one click adds them at the bottom. |
+| **Actions** | **Preview** full-screen, **Export** your site or backups, **Reset** to the example content (with confirmation). |
+
+Every icon control has a hover hint, and the content editor closes with `Esc`.
 
 ---
 
 ## 📦 Exporting Your Portfolio
 
-When you're happy with your portfolio, use the **Export** menu in the sidebar:
+From **Export** in the sidebar:
 
-- **Download website (HTML):** generates a single, fully self-contained `your-name.html` file — inline styles, inline icons, dark-mode toggle, working contact form (opens the visitor's email client), and smooth-scroll navigation. Drop it on GitHub Pages, Netlify, Vercel, or any static host and it just works.
-- **Backup data (JSON):** downloads everything you've entered (content + section layout) as `portfolio-backup.json`.
-- **Import backup (JSON):** restores a previously saved backup, including the section order.
+- **Download website (HTML):** a single `your-name.html` file with no external dependencies — inline styles, inline icons, light/dark toggle, smooth-scroll navigation, and a contact form that opens the visitor's email client. Drop it on any static host and it just works.
+- **Save backup (JSON):** everything you've entered, plus the section layout.
+- **Restore backup (JSON):** load a previously saved backup (replaces current work).
+
+---
+
+## 📁 Project Structure
+
+```
+/app                    -> Next.js App Router
+  /api/upload-avatar    -> Avatar upload endpoint (Supabase)
+  /preview              -> Full-screen portfolio preview
+  layout.tsx            -> Root layout (theme provider, metadata, toaster)
+  page.tsx              -> The builder
+/components
+  portfolio-builder.tsx -> Builder shell and sidebar
+  content-editor.tsx    -> Slide-in editor panel
+  /sections             -> The four portfolio sections (render preview + export source of truth)
+  /editors              -> Editing forms for each section
+  /ui                   -> shadcn/ui primitives (only the ones in use)
+/lib
+  portfolio-store.ts    -> Zustand store (content, layout, persistence)
+  export-portfolio.ts   -> Standalone HTML export + JSON backup/restore
+/types                  -> Shared TypeScript types
+```
 
 ---
 
 ## 🚀 Deployment
 
-### Vercel Deployment
+The builder deploys to Vercel out of the box:
 
-1. **Push your code to GitHub**
-2. **Connect your repository to Vercel**
-3. **Add environment variables in Vercel dashboard:**
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_AVATAR_BUCKET` (optional, defaults to 'avatars')
+1. Push to GitHub and import the repo in Vercel
+2. (Optional) Add the Supabase environment variables from `.env.example` for avatar uploads
 
-### Environment Variables
-
-The app gracefully handles missing Supabase environment variables:
-- **Development:** Uses `.env.local` if available
-- **Production:** Requires environment variables in Vercel dashboard
-- **Fallback:** API returns proper error responses if not configured
-
----
-
-## 🔧 Recent Fixes & Improvements
-
-### ✅ **Resolved Issues:**
-- **Package Manager Conflicts:** Fixed mixed npm/pnpm installations
-- **CSS Structure:** Consolidated `@layer` blocks and removed custom utilities
-- **Build Errors:** Resolved Supabase environment variable checks at build time
-- **API Robustness:** Added proper error handling for missing configurations
-
-### 🛠️ **Technical Improvements:**
-- **Clean Dependencies:** Resolved all package manager conflicts
-- **Optimized CSS:** Removed duplicate styles and improved structure
-- **Error Handling:** Graceful fallbacks for missing environment variables
-- **Build Process:** Streamlined and optimized for production
-
----
-
-## 💡 Customization Guide
-
-- **Content:** Modify sections in `/components/sections/*.tsx`
-- **Styling:** Update `/app/globals.css` for theme customization
-- **State:** Extend `/lib/portfolio-store.ts` for additional features
-- **API:** Add new routes in `/app/api/` for backend functionality
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues:
-
-1. **Build fails with Supabase errors:**
-   - Add environment variables to Vercel dashboard
-   - Or remove Supabase integration if not needed
-
-2. **Package manager conflicts:**
-   - Use `pnpm install --no-frozen-lockfile` to resolve
-   - Clear `node_modules` and reinstall if needed
-
-3. **CSS not updating:**
-   - Ensure you're editing `/app/globals.css` (not `/styles/globals.css`)
-   - Restart development server after changes
+Exported portfolios are static files and host anywhere — they don't need this app to run.
 
 ---
 
 ## 📜 License
 
-MIT License © 2025 Isaac Asamoah
+MIT License © 2025 Isaac Asamoah — see [LICENSE](LICENSE).
 
 ---
 
 ## 🙌 Acknowledgements
 
 - Inspired by tools like Webflow, Framer, and Notion
-- Built with ❤️ using modern frontend tools
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Icons from [Lucide React](https://lucide.dev/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/), icons from [Lucide](https://lucide.dev/)

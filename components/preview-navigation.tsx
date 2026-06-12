@@ -24,7 +24,8 @@ export function PreviewNavigation({ sections }: PreviewNavigationProps) {
   const [activeSection, setActiveSection] = useState<string>("")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   useEffect(() => {
     const handleScroll = () => {
@@ -115,10 +116,12 @@ export function PreviewNavigation({ sections }: PreviewNavigationProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                onClick={() => setTheme(isDark ? "light" : "dark")}
                 className="hidden md:flex"
+                title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
               >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
 
               {/* Mobile Menu Button */}
@@ -160,10 +163,10 @@ export function PreviewNavigation({ sections }: PreviewNavigationProps) {
                   <Button
                     variant="ghost"
                     className="w-full justify-start gap-2"
-                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    onClick={() => setTheme(isDark ? "light" : "dark")}
                   >
-                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                    {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                    {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    {isDark ? "Light Mode" : "Dark Mode"}
                   </Button>
                 </div>
               </div>

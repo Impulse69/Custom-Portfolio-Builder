@@ -1,8 +1,10 @@
 "use client"
 
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { X, Settings } from "lucide-react"
 import { usePortfolioStore } from "@/lib/portfolio-store"
 import { HeroEditor } from "@/components/editors/hero-editor"
@@ -19,6 +21,16 @@ const sectionNames = {
 
 export function ContentEditor() {
   const { editingSection, setEditingSection } = usePortfolioStore()
+
+  // Close with Escape for keyboard users
+  useEffect(() => {
+    if (!editingSection) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setEditingSection(null)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [editingSection, setEditingSection])
 
   if (!editingSection) return null
 
@@ -38,21 +50,31 @@ export function ContentEditor() {
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-96 bg-background border-l shadow-lg">
+    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md border-l bg-background shadow-lg md:w-96">
       <Card className="h-full rounded-none border-0">
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              <CardTitle className="text-lg">{sectionNames[editingSection as keyof typeof sectionNames]}</CardTitle>
+              <div>
+                <CardTitle className="text-lg">
+                  {sectionNames[editingSection as keyof typeof sectionNames]}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">Changes are saved automatically</p>
+              </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setEditingSection(null)}>
-              <X className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={() => setEditingSection(null)} aria-label="Close editor">
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Close editor (Esc)</TooltipContent>
+            </Tooltip>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-80px)]">
+          <ScrollArea className="h-[calc(100vh-92px)]">
             <div className="p-6">{renderEditor()}</div>
           </ScrollArea>
         </CardContent>
