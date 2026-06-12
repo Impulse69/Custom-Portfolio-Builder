@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, type ChangeEvent, type SyntheticEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,10 +15,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import Cropper from 'react-easy-crop'
-import type { Area } from 'react-easy-crop'
+import ReactCrop, {
+  centerCrop,
+  makeAspectCrop,
+  convertToPixelCrop,
+  type Crop,
+  type PixelCrop,
+} from 'react-image-crop'
+import 'react-image-crop/dist/ReactCrop.css'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
+import { validateImageFile } from '@/lib/image-utils'
 
 interface AvatarUploadProps {
   value: {
@@ -27,110 +34,82 @@ interface AvatarUploadProps {
     initials: string
   }
   onChange: (value: { type: 'image' | 'initials'; imageUrl?: string; initials: string }) => void
+  /** Shown when no initials are set, e.g. derived from the person's name. */
+  fallbackInitials?: string
   className?: string
 }
 
 // Keep stored avatars small: plenty for a 192px display circle, and small
 // enough to embed as a data URL when no upload backend is configured.
 const OUTPUT_SIZE = 512
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB source file
 
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new Image()
-    image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', (error) => reject(error))
-    image.setAttribute('crossOrigin', 'anonymous')
-    image.src = url
-  })
+// GitHub-style initial selection: a centered square covering most of the photo.
+function initialCrop(width: number, height: number): Crop {
+  return centerCrop(makeAspectCrop({ unit: '%', width: 90 }, 1, width, height), width, height)
+}
 
-// Rotation-aware crop (react-easy-crop's documented recipe): draw the rotated
-// image onto a bounding-box canvas, then cut the crop area out of that.
-const getCroppedCanvas = async (
-  imageSrc: string,
-  pixelCrop: Area,
-  rotation: number,
-): Promise<HTMLCanvasElement> => {
-  const image = await createImage(imageSrc)
-  const rotRad = (rotation * Math.PI) / 180
-
-  const bBoxWidth = Math.abs(Math.cos(rotRad) * image.width) + Math.abs(Math.sin(rotRad) * image.height)
-  const bBoxHeight = Math.abs(Math.sin(rotRad) * image.width) + Math.abs(Math.cos(rotRad) * image.height)
+// Cut the selected square out of the displayed image at natural resolution,
+// on a white background so transparent PNGs don't turn black in the JPEG.
+function cropToCanvas(image: HTMLImageElement, crop: PixelCrop): HTMLCanvasElement {
+  const scaleX = image.naturalWidth / image.width
+  const scaleY = image.naturalHeight / image.height
+  const size = Math.max(1, Math.round(Math.min(OUTPUT_SIZE, crop.width * scaleX)))
 
   const canvas = document.createElement('canvas')
-  canvas.width = bBoxWidth
-  canvas.height = bBoxHeight
+  canvas.width = size
+  canvas.height = size
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas is not supported in this browser.')
-  ctx.translate(bBoxWidth / 2, bBoxHeight / 2)
-  ctx.rotate(rotRad)
-  ctx.translate(-image.width / 2, -image.height / 2)
-  ctx.drawImage(image, 0, 0)
-
-  const output = document.createElement('canvas')
-  const size = Math.min(OUTPUT_SIZE, pixelCrop.width)
-  output.width = size
-  output.height = size
-  const outputCtx = output.getContext('2d')
-  if (!outputCtx) throw new Error('Canvas is not supported in this browser.')
-  outputCtx.drawImage(
-    canvas,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, size, size)
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(
+    image,
+    crop.x * scaleX,
+    crop.y * scaleY,
+    crop.width * scaleX,
+    crop.height * scaleY,
     0,
     0,
     size,
     size,
   )
-  return output
+  return canvas
 }
 
 const canvasToBlob = (canvas: HTMLCanvasElement): Promise<Blob | null> =>
   new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9))
 
-export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) {
+export function AvatarUpload({ value, onChange, fallbackInitials, className }: AvatarUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [imageSrc, setImageSrc] = useState<string | null>(null)
-  const [crop, setCrop] = useState({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [rotation, setRotation] = useState(0)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const [crop, setCrop] = useState<Crop>()
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
   const { toast } = useToast()
 
-  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels)
-  }, [])
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: 'Unsupported file type',
-        description: 'Please choose a JPG, PNG, or WebP image.',
-        variant: 'destructive',
-      })
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      toast({ title: 'Could not use this image', description: validationError, variant: 'destructive' })
       return
     }
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        title: 'File too large',
-        description: 'Please choose an image under 10MB.',
-        variant: 'destructive',
-      })
-      return
-    }
-    setCrop({ x: 0, y: 0 })
-    setZoom(1)
-    setRotation(0)
+    setCrop(undefined)
+    setCompletedCrop(undefined)
     const reader = new FileReader()
     reader.onload = () => setImageSrc(reader.result as string)
     reader.readAsDataURL(file)
+  }
+
+  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = event.currentTarget
+    const nextCrop = initialCrop(width, height)
+    setCrop(nextCrop)
+    setCompletedCrop(convertToPixelCrop(nextCrop, width, height))
   }
 
   // Try the Supabase upload endpoint for a hosted URL; if it isn't configured
@@ -154,10 +133,11 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
   }
 
   const handleSaveCroppedImage = async () => {
-    if (!imageSrc || !croppedAreaPixels) return
+    const image = imgRef.current
+    if (!image || !completedCrop?.width || !completedCrop?.height) return
     setIsUploading(true)
     try {
-      const canvas = await getCroppedCanvas(imageSrc, croppedAreaPixels, rotation)
+      const canvas = cropToCanvas(image, completedCrop)
       const { url, hosted } = await uploadOrEmbed(canvas)
       onChange({
         type: 'image',
@@ -166,7 +146,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
       })
       setImageSrc(null)
       toast({
-        title: 'Avatar updated',
+        title: 'Profile picture updated',
         description: hosted
           ? 'Your photo was uploaded and added to the portfolio.'
           : 'Your photo was saved with the portfolio (no upload service configured — it is embedded directly).',
@@ -197,16 +177,17 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
     })
   }
 
+  // Switching display type keeps the uploaded photo, so toggling back to
+  // "image" restores it. Only the explicit Remove button deletes the photo.
   const handleTypeChange = (newType: 'image' | 'initials') => {
     onChange({
       ...value,
       type: newType,
-      // Clear imageUrl if switching to initials type
-      imageUrl: newType === 'initials' ? undefined : value.imageUrl,
     })
   }
 
   const displayUrl = value.type === 'image' ? value.imageUrl : undefined
+  const displayInitials = value.initials || fallbackInitials || '?'
 
   return (
     <div className={cn('flex flex-col items-center gap-4', className)}>
@@ -216,7 +197,7 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
             <AvatarImage src={displayUrl} alt="Avatar" />
           ) : null}
           <AvatarFallback className="text-2xl font-bold">
-            {value.initials}
+            {displayInitials}
           </AvatarFallback>
         </Avatar>
 
@@ -272,10 +253,15 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
               id="initials"
               value={value.initials}
               onChange={(e) => handleInitialsChange(e.target.value)}
-              placeholder="JD"
+              placeholder={fallbackInitials || 'JD'}
               maxLength={3}
               className="text-center uppercase"
             />
+            {!value.initials && fallbackInitials && (
+              <p className="text-xs text-muted-foreground">
+                Using &quot;{fallbackInitials}&quot; from your name — type here to override.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -289,67 +275,49 @@ export function AvatarUpload({ value, onChange, className }: AvatarUploadProps) 
       />
 
       <Dialog open={!!imageSrc} onOpenChange={(open) => !open && setImageSrc(null)}>
-        <DialogContent className="sm:max-w-[425px] h-[540px] flex flex-col p-0">
-          <DialogHeader className="p-6 pb-4">
-            <DialogTitle>Crop your photo</DialogTitle>
-            <DialogDescription>Drag to position, then adjust zoom and rotation.</DialogDescription>
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[480px]">
+          <DialogHeader className="border-b p-4 pr-12 text-left">
+            <DialogTitle>Crop your new profile picture</DialogTitle>
+            <DialogDescription>
+              Drag the selection to reposition it, or resize it with the corner handles.
+            </DialogDescription>
           </DialogHeader>
-          <div className="relative flex-1 bg-gray-900">
-            <Cropper
-              image={imageSrc || ''}
-              crop={crop}
-              zoom={zoom}
-              rotation={rotation}
-              aspect={1 / 1}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onRotationChange={setRotation}
-              onCropComplete={onCropComplete}
-              cropShape="round"
-              showGrid={false}
-              restrictPosition={false}
-              classes={{
-                containerClassName: 'bg-transparent',
-                mediaClassName: 'object-contain',
-                cropAreaClassName: 'rounded-full border-2 border-primary',
-              }}
-            />
+
+          <div className="flex max-h-[60vh] items-center justify-center overflow-auto bg-muted/40 p-4">
+            {imageSrc && (
+              <ReactCrop
+                crop={crop}
+                onChange={(_pixelCrop, percentCrop) => setCrop(percentCrop)}
+                onComplete={(pixelCrop) => setCompletedCrop(pixelCrop)}
+                aspect={1}
+                minWidth={32}
+                keepSelection
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  ref={imgRef}
+                  src={imageSrc}
+                  alt="Photo to crop"
+                  onLoad={handleImageLoad}
+                  className="max-h-[52vh] w-auto select-none"
+                />
+              </ReactCrop>
+            )}
           </div>
-          <DialogFooter className="flex flex-col gap-4 p-6 pt-4">
-            <div className="flex items-center gap-4">
-              <Label htmlFor="zoom" className="w-16">Zoom</Label>
-              <Input
-                id="zoom"
-                type="range"
-                value={zoom}
-                min={1}
-                max={3}
-                step={0.1}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <Label htmlFor="rotation" className="w-16">Rotation</Label>
-              <Input
-                id="rotation"
-                type="range"
-                value={rotation}
-                min={0}
-                max={360}
-                step={1}
-                onChange={(e) => setRotation(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-            <Button onClick={handleSaveCroppedImage} disabled={isUploading}>
+
+          <DialogFooter className="border-t p-4">
+            <Button
+              className="w-full"
+              onClick={handleSaveCroppedImage}
+              disabled={isUploading || !completedCrop?.width}
+            >
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : (
-                'Save photo'
+                'Set new profile picture'
               )}
             </Button>
           </DialogFooter>

@@ -120,6 +120,27 @@ describe("generatePortfolioHtml", () => {
     expect(html).toContain("https://example.com/cv.pdf")
   })
 
+  it("derives initials from the name when none are set", () => {
+    const noInitials = {
+      ...content,
+      hero: { ...content.hero, avatar: { type: "initials" as const, initials: "" } },
+    }
+    expect(generatePortfolioHtml(noInitials, ["hero"])).toContain(">IA</div>")
+  })
+
+  it("shows initials when the avatar type is initials, even if a photo is stored", () => {
+    const photoKept = {
+      ...content,
+      hero: {
+        ...content.hero,
+        avatar: { type: "initials" as const, initials: "IA", imageUrl: "https://example.com/me.jpg" },
+      },
+    }
+    const result = generatePortfolioHtml(photoKept, ["hero"])
+    expect(result).toContain(">IA</div>")
+    expect(result).not.toContain("https://example.com/me.jpg")
+  })
+
   it("replaces local placeholder images and keeps external ones", () => {
     expect(html).toContain("project-image-placeholder")
     expect(html).toContain("https://example.com/img.png")
