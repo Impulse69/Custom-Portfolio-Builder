@@ -192,7 +192,10 @@ export function AvatarUpload({ value, onChange, fallbackInitials, className }: A
   return (
     <div className={cn('flex flex-col items-center gap-4', className)}>
       <div className="relative">
-        <Avatar className="w-32 h-32">
+        {/* key forces a remount when switching between image and initials so
+            Radix's avatar loading status resets — otherwise the fallback stays
+            hidden (blank circle) after an image is removed. */}
+        <Avatar key={displayUrl ?? 'initials'} className="w-32 h-32">
           {displayUrl ? (
             <AvatarImage src={displayUrl} alt="Avatar" />
           ) : null}

@@ -22,6 +22,8 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ content }: HeroSectionProps) {
+  const showAvatarImage = content.avatar.type === "image" && Boolean(content.avatar.imageUrl)
+
   return (
     <section
       id="hero"
@@ -42,8 +44,11 @@ export function HeroSection({ content }: HeroSectionProps) {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="relative mx-auto w-48 h-48 rounded-full"
           >
-            <Avatar className="w-full h-full">
-              {content.avatar.type === "image" && content.avatar.imageUrl ? (
+            <Avatar
+              key={showAvatarImage ? content.avatar.imageUrl : 'initials'}
+              className="w-full h-full"
+            >
+              {showAvatarImage ? (
                 <AvatarImage src={content.avatar.imageUrl} alt={content.name} />
               ) : null}
               <AvatarFallback className="text-6xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center">
