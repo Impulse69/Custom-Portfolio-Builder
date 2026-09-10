@@ -150,6 +150,36 @@ describe("generatePortfolioHtml", () => {
     expect(html).not.toContain('href="#"')
   })
 
+  it("omits unsafe URL schemes from exported links", () => {
+    const unsafe = {
+      ...content,
+      hero: {
+        ...content.hero,
+        ctaSecondaryHref: "javascript:alert('cv')",
+        socialLinks: {
+          ...content.hero.socialLinks,
+          github: "javascript:alert('social')",
+        },
+      },
+      projects: {
+        ...content.projects,
+        projects: content.projects.projects.map((project, index) =>
+          index === 0 ? { ...project, liveUrl: "data:text/html,<script>alert(1)</script>" } : project,
+        ),
+      },
+      contact: {
+        ...content.contact,
+        socialLinks: {
+          ...content.contact.socialLinks,
+          github: "vbscript:msgbox(1)",
+        },
+      },
+    }
+
+    const result = generatePortfolioHtml(unsafe, allSections)
+    expect(result).not.toMatch(/href="(?:javascript|data|vbscript):/i)
+  })
+
   it("wires the contact form to the configured email", () => {
     expect(html).toContain('data-email="a@b.com"')
   })
