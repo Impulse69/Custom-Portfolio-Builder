@@ -19,6 +19,23 @@ function esc(value: string): string {
     .replace(/'/g, "&#39;")
 }
 
+/**
+ * Only emit navigable web links in exported HTML. Imported JSON can contain
+ * values that bypass the editor's `type="url"` hint, including executable
+ * `javascript:` or `data:` URLs.
+ */
+function safeWebHref(value?: string): string | null {
+  const candidate = value?.trim()
+  if (!candidate || candidate === "#") return null
+
+  try {
+    const parsed = new URL(candidate, "https://portfolio.invalid")
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? candidate : null
+  } catch {
+    return null
+  }
+}
+
 // Lucide-style inline SVG icons so the exported file has no external dependencies
 const ICON_PATHS: Record<string, string> = {
   github:
@@ -98,7 +115,7 @@ function renderHero(hero: HeroContent, hasProjects: boolean, hasContact: boolean
     ctas.push(`<a class="btn btn-primary" href="${primaryTarget}">${esc(hero.ctaPrimary)} ${icon("arrowright", 16)}</a>`)
   }
   if (hero.ctaSecondaryEnabled) {
-    const href = hero.ctaSecondaryHref?.trim()
+    const href = safeWebHref(hero.ctaSecondaryHref)
     ctas.push(
       href
         ? `<a class="btn btn-outline" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${icon("download", 16)} ${esc(hero.ctaSecondary)}</a>`
@@ -107,14 +124,17 @@ function renderHero(hero: HeroContent, hasProjects: boolean, hasContact: boolean
   }
 
   const socials: string[] = []
-  if (hero.socialLinks.githubEnabled && hero.socialLinks.github)
-    socials.push(`<a class="social-btn" href="${esc(hero.socialLinks.github)}" target="_blank" rel="noopener noreferrer" aria-label="GitHub">${icon("github")}</a>`)
-  if (hero.socialLinks.linkedinEnabled && hero.socialLinks.linkedin)
-    socials.push(`<a class="social-btn" href="${esc(hero.socialLinks.linkedin)}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">${icon("linkedin")}</a>`)
+  const githubHref = safeWebHref(hero.socialLinks.github)
+  const linkedinHref = safeWebHref(hero.socialLinks.linkedin)
+  const twitterHref = safeWebHref(hero.socialLinks.twitter)
+  if (hero.socialLinks.githubEnabled && githubHref)
+    socials.push(`<a class="social-btn" href="${esc(githubHref)}" target="_blank" rel="noopener noreferrer" aria-label="GitHub">${icon("github")}</a>`)
+  if (hero.socialLinks.linkedinEnabled && linkedinHref)
+    socials.push(`<a class="social-btn" href="${esc(linkedinHref)}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">${icon("linkedin")}</a>`)
   if (hero.socialLinks.emailEnabled && hero.socialLinks.email)
     socials.push(`<a class="social-btn" href="mailto:${esc(hero.socialLinks.email)}" aria-label="Email">${icon("mail")}</a>`)
-  if (hero.socialLinks.twitterEnabled && hero.socialLinks.twitter)
-    socials.push(`<a class="social-btn" href="${esc(hero.socialLinks.twitter)}" target="_blank" rel="noopener noreferrer" aria-label="Twitter">${icon("twitter")}</a>`)
+  if (hero.socialLinks.twitterEnabled && twitterHref)
+    socials.push(`<a class="social-btn" href="${esc(twitterHref)}" target="_blank" rel="noopener noreferrer" aria-label="Twitter">${icon("twitter")}</a>`)
 
   return `
   <section id="hero" class="hero">
@@ -186,10 +206,12 @@ function renderAbout(about: AboutContent): string {
 function renderProjects(projects: ProjectsContent): string {
   const renderLinks = (liveUrl: string, githubUrl: string) => {
     const links: string[] = []
-    if (liveUrl && liveUrl !== "#")
-      links.push(`<a class="btn btn-outline btn-sm" href="${esc(liveUrl)}" target="_blank" rel="noopener noreferrer">${icon("external", 14)} Live Demo</a>`)
-    if (githubUrl && githubUrl !== "#")
-      links.push(`<a class="btn btn-outline btn-sm" href="${esc(githubUrl)}" target="_blank" rel="noopener noreferrer">${icon("github", 14)} Code</a>`)
+    const safeLiveUrl = safeWebHref(liveUrl)
+    const safeGithubUrl = safeWebHref(githubUrl)
+    if (safeLiveUrl)
+      links.push(`<a class="btn btn-outline btn-sm" href="${esc(safeLiveUrl)}" target="_blank" rel="noopener noreferrer">${icon("external", 14)} Live Demo</a>`)
+    if (safeGithubUrl)
+      links.push(`<a class="btn btn-outline btn-sm" href="${esc(safeGithubUrl)}" target="_blank" rel="noopener noreferrer">${icon("github", 14)} Code</a>`)
     return links.join("\n            ")
   }
 
@@ -248,21 +270,24 @@ function renderContact(contact: ContactContent): string {
           </div>`)
 
   const socialItems: string[] = []
-  if (contact.socialLinks.githubEnabled && contact.socialLinks.github)
+  const githubHref = safeWebHref(contact.socialLinks.github)
+  const linkedinHref = safeWebHref(contact.socialLinks.linkedin)
+  const twitterHref = safeWebHref(contact.socialLinks.twitter)
+  if (contact.socialLinks.githubEnabled && githubHref)
     socialItems.push(`
-          <a class="card info-card" href="${esc(contact.socialLinks.github)}" target="_blank" rel="noopener noreferrer">
+          <a class="card info-card" href="${esc(githubHref)}" target="_blank" rel="noopener noreferrer">
             <span class="info-icon">${icon("github")}</span>
             <span><strong>GitHub</strong></span>
           </a>`)
-  if (contact.socialLinks.linkedinEnabled && contact.socialLinks.linkedin)
+  if (contact.socialLinks.linkedinEnabled && linkedinHref)
     socialItems.push(`
-          <a class="card info-card" href="${esc(contact.socialLinks.linkedin)}" target="_blank" rel="noopener noreferrer">
+          <a class="card info-card" href="${esc(linkedinHref)}" target="_blank" rel="noopener noreferrer">
             <span class="info-icon">${icon("linkedin")}</span>
             <span><strong>LinkedIn</strong></span>
           </a>`)
-  if (contact.socialLinks.twitterEnabled && contact.socialLinks.twitter)
+  if (contact.socialLinks.twitterEnabled && twitterHref)
     socialItems.push(`
-          <a class="card info-card" href="${esc(contact.socialLinks.twitter)}" target="_blank" rel="noopener noreferrer">
+          <a class="card info-card" href="${esc(twitterHref)}" target="_blank" rel="noopener noreferrer">
             <span class="info-icon">${icon("twitter")}</span>
             <span><strong>Twitter</strong></span>
           </a>`)
