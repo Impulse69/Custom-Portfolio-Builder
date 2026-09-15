@@ -558,17 +558,77 @@ export function buildPortfolioExport(content: PortfolioContent, selectedSections
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+}
+
+function hasStrings(value: Record<string, unknown>, keys: string[]): boolean {
+  return keys.every((key) => typeof value[key] === "string")
+}
+
+function hasBooleans(value: Record<string, unknown>, keys: string[]): boolean {
+  return keys.every((key) => typeof value[key] === "boolean")
+}
+
+function hasOptionalStrings(value: Record<string, unknown>, keys: string[]): boolean {
+  return keys.every((key) => value[key] === undefined || typeof value[key] === "string")
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+}
+
+/** Validate before the importer replaces and persists the current portfolio. */
+function isPortfolioContent(value: unknown): value is PortfolioContent {
+  if (!isRecord(value)) return false
+  const { hero, about, projects, contact } = value
+  if (!isRecord(hero) || !isRecord(about) || !isRecord(projects) || !isRecord(contact)) return false
+
+  if (!hasStrings(hero, ["name", "title", "subtitle", "description", "ctaPrimary", "ctaSecondary"]) ||
+    !hasBooleans(hero, ["availableForWork", "ctaPrimaryEnabled", "ctaSecondaryEnabled"]) ||
+    !hasOptionalStrings(hero, ["ctaSecondaryHref"]) ||
+    !isRecord(hero.avatar) || !hasStrings(hero.avatar, ["initials"]) ||
+    !hasOptionalStrings(hero.avatar, ["imageUrl"]) ||
+    (hero.avatar.type !== "image" && hero.avatar.type !== "initials") ||
+    !isRecord(hero.socialLinks) || !hasStrings(hero.socialLinks, ["github", "linkedin", "email"]) ||
+    !hasOptionalStrings(hero.socialLinks, ["twitter"]) ||
+    !hasBooleans(hero.socialLinks, ["githubEnabled", "linkedinEnabled", "emailEnabled", "twitterEnabled"])) return false
+
+  if (!hasStrings(about, ["title", "subtitle", "description"]) || !isStringArray(about.journey) ||
+    !Array.isArray(about.skills) || !about.skills.every((skill) =>
+      isRecord(skill) && hasStrings(skill, ["name", "category"]) &&
+      typeof skill.level === "number" && Number.isFinite(skill.level)) ||
+    !Array.isArray(about.services) || !about.services.every((service) =>
+      isRecord(service) && hasStrings(service, ["title", "description", "icon"]))) return false
+
+  if (!hasStrings(projects, ["title", "subtitle", "description"]) ||
+    !Array.isArray(projects.projects) || !projects.projects.every((project) =>
+      isRecord(project) && hasStrings(project, ["id", "title", "description", "image", "liveUrl", "githubUrl"]) &&
+      isStringArray(project.tags) && hasBooleans(project, ["featured"]))) return false
+
+  return hasStrings(contact, ["title", "subtitle", "description", "email", "phone", "location"]) &&
+    hasBooleans(contact, ["emailEnabled", "phoneEnabled", "locationEnabled"]) &&
+    isRecord(contact.socialLinks) && hasStrings(contact.socialLinks, ["github", "linkedin", "twitter"]) &&
+    hasBooleans(contact.socialLinks, ["githubEnabled", "linkedinEnabled", "twitterEnabled"])
+}
+
 export function parsePortfolioJson(text: string): PortfolioExport {
-  const data = JSON.parse(text)
-  if (!data || typeof data !== "object") throw new Error("Invalid file format")
-  const { content, selectedSections } = data as Partial<PortfolioExport>
-  if (!content || !content.hero || !content.about || !content.projects || !content.contact) {
-    throw new Error("File is missing portfolio content")
+  const data: unknown = JSON.parse(text)
+  if (!isRecord(data)) throw new Error("Invalid file format")
+  if (data.version !== 1) throw new Error("Unsupported portfolio backup version")
+  if (typeof data.exportedAt !== "string") throw new Error("File is missing backup metadata")
+  if (!isPortfolioContent(data.content)) throw new Error("File contains invalid or missing portfolio content")
+  if (!isStringArray(data.selectedSections) ||
+    data.selectedSections.some((section) => !SECTION_ORDER.includes(section as ExportSection)) ||
+    new Set(data.selectedSections).size !== data.selectedSections.length) {
+    throw new Error("File contains an invalid section layout")
   }
-  if (!Array.isArray(selectedSections)) {
-    throw new Error("File is missing the section layout")
+  return {
+    version: 1,
+    exportedAt: data.exportedAt,
+    selectedSections: data.selectedSections,
+    content: data.content,
   }
-  return data as PortfolioExport
 }
 
 export function downloadFile(filename: string, contents: string, mimeType: string) {

@@ -200,6 +200,34 @@ describe("generatePortfolioHtml", () => {
 })
 
 describe("JSON backup", () => {
+  it.each([
+    ["empty sections", { hero: {}, about: {}, projects: {}, contact: {} }],
+    ["missing avatar", { ...content, hero: { ...content.hero, avatar: null } }],
+    ["non-array journey", { ...content, about: { ...content.about, journey: "not an array" } }],
+    ["invalid skill", { ...content, about: { ...content.about, skills: [null] } }],
+    ["invalid project tags", { ...content, projects: { ...content.projects, projects: [{ ...content.projects.projects[0], tags: [42] }] } }],
+    ["invalid visibility flag", { ...content, contact: { ...content.contact, emailEnabled: "yes" } }],
+  ])("rejects malformed content: %s", (_label, malformed) => {
+    const backup = { ...buildPortfolioExport(content, allSections), content: malformed }
+    expect(() => parsePortfolioJson(JSON.stringify(backup))).toThrow()
+  })
+
+  it.each([["unknown"], ["hero", "hero"], [42]])("rejects invalid section layout %j", (...sections) => {
+    const backup = { ...buildPortfolioExport(content, allSections), selectedSections: sections }
+    expect(() => parsePortfolioJson(JSON.stringify(backup))).toThrow()
+  })
+
+  it("rejects unsupported backup versions", () => {
+    const backup = { ...buildPortfolioExport(content, allSections), version: 2 }
+    expect(() => parsePortfolioJson(JSON.stringify(backup))).toThrow()
+  })
+
+  it("accepts an empty layout and absent optional URL fields", () => {
+    const backup = buildPortfolioExport(structuredClone(content), [])
+    delete backup.content.hero.ctaSecondaryHref
+    expect(parsePortfolioJson(JSON.stringify(backup)).selectedSections).toEqual([])
+  })
+
   it("round-trips content and layout", () => {
     const exported = buildPortfolioExport(content, ["hero", "contact"])
     const parsed = parsePortfolioJson(JSON.stringify(exported))
