@@ -212,6 +212,21 @@ describe("JSON backup", () => {
     expect(() => parsePortfolioJson(JSON.stringify(backup))).toThrow()
   })
 
+  it.each([
+    ["empty", ""],
+    ["whitespace-only", "   "],
+  ])("rejects %s project IDs", (_label, id) => {
+    const backup = buildPortfolioExport(structuredClone(content), allSections)
+    backup.content.projects.projects[0].id = id
+    expect(() => parsePortfolioJson(JSON.stringify(backup))).toThrow()
+  })
+
+  it("rejects duplicate project IDs", () => {
+    const backup = buildPortfolioExport(structuredClone(content), allSections)
+    backup.content.projects.projects[1].id = backup.content.projects.projects[0].id
+    expect(() => parsePortfolioJson(JSON.stringify(backup))).toThrow()
+  })
+
   it.each([["unknown"], ["hero", "hero"], [42]])("rejects invalid section layout %j", (...sections) => {
     const backup = { ...buildPortfolioExport(content, allSections), selectedSections: sections }
     expect(() => parsePortfolioJson(JSON.stringify(backup))).toThrow()

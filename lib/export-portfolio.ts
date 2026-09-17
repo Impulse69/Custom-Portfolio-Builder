@@ -578,6 +578,12 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string")
 }
 
+function hasUniqueProjectIds(projects: unknown[]): boolean {
+  const ids = projects.map((project) => isRecord(project) ? project.id : undefined)
+  return ids.every((id) => typeof id === "string" && id.trim().length > 0) &&
+    new Set(ids).size === ids.length
+}
+
 /** Validate before the importer replaces and persists the current portfolio. */
 function isPortfolioContent(value: unknown): value is PortfolioContent {
   if (!isRecord(value)) return false
@@ -602,7 +608,8 @@ function isPortfolioContent(value: unknown): value is PortfolioContent {
       isRecord(service) && hasStrings(service, ["title", "description", "icon"]))) return false
 
   if (!hasStrings(projects, ["title", "subtitle", "description"]) ||
-    !Array.isArray(projects.projects) || !projects.projects.every((project) =>
+    !Array.isArray(projects.projects) || !hasUniqueProjectIds(projects.projects) ||
+    !projects.projects.every((project) =>
       isRecord(project) && hasStrings(project, ["id", "title", "description", "image", "liveUrl", "githubUrl"]) &&
       isStringArray(project.tags) && hasBooleans(project, ["featured"]))) return false
 
