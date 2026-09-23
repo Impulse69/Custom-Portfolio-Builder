@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Github, Linkedin, Mail, Download, ArrowRight, Twitter } from "lucide-react"
 import { motion } from "framer-motion"
 import type { HeroContent } from "@/lib/portfolio-store"
+import { safeWebHref } from "@/lib/safe-href"
 import { initialsFromName } from "@/lib/utils"
 import dynamic from "next/dynamic"
 
@@ -22,6 +23,7 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ content }: HeroSectionProps) {
+  const secondaryHref = safeWebHref(content.ctaSecondaryHref)
   const showAvatarImage = content.avatar.type === "image" && Boolean(content.avatar.imageUrl)
 
   return (
@@ -106,9 +108,9 @@ export function HeroSection({ content }: HeroSectionProps) {
               </Button>
             )}
             {content.ctaSecondaryEnabled &&
-              (content.ctaSecondaryHref ? (
+              (secondaryHref ? (
                 <Button variant="outline" size="lg" asChild>
-                  <a href={content.ctaSecondaryHref} target="_blank" rel="noopener noreferrer">
+                  <a href={secondaryHref} target="_blank" rel="noopener noreferrer">
                     <LucideDownload className="mr-2 h-4 w-4" />
                     {content.ctaSecondary}
                   </a>
@@ -128,10 +130,10 @@ export function HeroSection({ content }: HeroSectionProps) {
             className="flex justify-center gap-6 pt-8"
           >
             {[
-              content.socialLinks.githubEnabled && { icon: LucideGithub, href: content.socialLinks.github, label: "GitHub" },
-              content.socialLinks.linkedinEnabled && { icon: LucideLinkedin, href: content.socialLinks.linkedin, label: "LinkedIn" },
+              content.socialLinks.githubEnabled && safeWebHref(content.socialLinks.github) && { icon: LucideGithub, href: safeWebHref(content.socialLinks.github)!, label: "GitHub" },
+              content.socialLinks.linkedinEnabled && safeWebHref(content.socialLinks.linkedin) && { icon: LucideLinkedin, href: safeWebHref(content.socialLinks.linkedin)!, label: "LinkedIn" },
               content.socialLinks.emailEnabled && { icon: LucideMail, href: `mailto:${content.socialLinks.email}`, label: "Email" },
-              content.socialLinks.twitterEnabled && content.socialLinks.twitter && { icon: LucideTwitter, href: content.socialLinks.twitter, label: "Twitter" },
+              content.socialLinks.twitterEnabled && safeWebHref(content.socialLinks.twitter) && { icon: LucideTwitter, href: safeWebHref(content.socialLinks.twitter)!, label: "Twitter" },
             ].filter((item): item is { icon: React.ComponentType<any>, href: string, label: string } => Boolean(item)).map(({ icon: Icon, href, label }) => (
               <Button
                 key={label}
