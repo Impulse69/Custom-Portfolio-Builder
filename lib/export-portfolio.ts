@@ -1,4 +1,5 @@
 import type { PortfolioContent, HeroContent, AboutContent, ProjectsContent, ContactContent } from "@/lib/portfolio-store"
+import { safeWebHref } from "@/lib/safe-href"
 
 export interface PortfolioExport {
   version: 1
@@ -17,23 +18,6 @@ function esc(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
-}
-
-/**
- * Only emit navigable web links in exported HTML. Imported JSON can contain
- * values that bypass the editor's `type="url"` hint, including executable
- * `javascript:` or `data:` URLs.
- */
-function safeWebHref(value?: string): string | null {
-  const candidate = value?.trim()
-  if (!candidate || candidate === "#") return null
-
-  try {
-    const parsed = new URL(candidate, "https://portfolio.invalid")
-    return parsed.protocol === "http:" || parsed.protocol === "https:" ? candidate : null
-  } catch {
-    return null
-  }
 }
 
 // Lucide-style inline SVG icons so the exported file has no external dependencies

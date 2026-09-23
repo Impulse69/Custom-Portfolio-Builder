@@ -13,6 +13,7 @@ import { motion } from "framer-motion"
 import { Mail, Phone, MapPin, Send, Github, Linkedin, Twitter } from "lucide-react"
 import type { ContactContent } from "@/lib/portfolio-store"
 import { Switch } from "@/components/ui/switch"
+import { safeWebHref } from "@/lib/safe-href"
 
 interface ContactSectionProps {
   content: ContactContent
@@ -232,7 +233,8 @@ export function ContactSection({ content }: ContactSectionProps) {
               <div className="space-y-4">
                 {socialLinks.map((social, index) => {
                   const Icon = social.icon
-                  return social.enabled && (
+                  const href = safeWebHref(social.href)
+                  return social.enabled && href && (
                     <motion.div
                       key={social.label}
                       initial={{ opacity: 0, y: 20 }}
@@ -242,7 +244,7 @@ export function ContactSection({ content }: ContactSectionProps) {
                     >
                       <Card className="p-4 hover:shadow-md transition-shadow">
                         <a
-                          href={social.href}
+                          href={href}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-4 group"

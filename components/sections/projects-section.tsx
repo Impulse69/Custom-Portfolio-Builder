@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import { ExternalLink, Github } from "lucide-react"
 import Image from "next/image"
 import type { ProjectsContent } from "@/lib/portfolio-store"
+import { safeWebHref } from "@/lib/safe-href"
 
 interface ProjectsSectionProps {
   content: ProjectsContent
@@ -64,18 +65,18 @@ export function ProjectsSection({ content }: ProjectsSectionProps) {
                       className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
-                      <Button size="sm" variant="secondary" asChild>
-                        <a href={project.liveUrl} target="_blank" rel="noopener noreferrer">
+                      {safeWebHref(project.liveUrl) && <Button size="sm" variant="secondary" asChild>
+                        <a href={safeWebHref(project.liveUrl)!} target="_blank" rel="noopener noreferrer">
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Live Demo
                         </a>
-                      </Button>
-                      <Button size="sm" variant="secondary" asChild>
-                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                      </Button>}
+                      {safeWebHref(project.githubUrl) && <Button size="sm" variant="secondary" asChild>
+                        <a href={safeWebHref(project.githubUrl)!} target="_blank" rel="noopener noreferrer">
                           <Github className="h-4 w-4 mr-2" />
                           Code
                         </a>
-                      </Button>
+                      </Button>}
                     </div>
                   </div>
                   <CardContent className="p-6">
@@ -135,18 +136,18 @@ export function ProjectsSection({ content }: ProjectsSectionProps) {
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 pt-0 flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1" asChild>
-                        <a href={project.liveUrl} target="_blank" rel="noopener noreferrer">
+                      {safeWebHref(project.liveUrl) && <Button size="sm" variant="outline" className="flex-1" asChild>
+                        <a href={safeWebHref(project.liveUrl)!} target="_blank" rel="noopener noreferrer">
                           <ExternalLink className="h-3 w-3 mr-1" />
                           Demo
                         </a>
-                      </Button>
-                      <Button size="sm" variant="outline" className="flex-1" asChild>
-                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                      </Button>}
+                      {safeWebHref(project.githubUrl) && <Button size="sm" variant="outline" className="flex-1" asChild>
+                        <a href={safeWebHref(project.githubUrl)!} target="_blank" rel="noopener noreferrer">
                           <Github className="h-3 w-3 mr-1" />
                           Code
                         </a>
-                      </Button>
+                      </Button>}
                     </CardFooter>
                   </Card>
                 </motion.div>
