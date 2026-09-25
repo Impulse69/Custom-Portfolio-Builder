@@ -14,3 +14,10 @@ export function safeWebHref(value?: string): string | null {
     return null
   }
 }
+
+export function safeProjectHrefs(project: { liveUrl?: string; githubUrl?: string }) {
+  return {
+    liveUrl: safeWebHref(project.liveUrl),
+    githubUrl: safeWebHref(project.githubUrl),
+  }
+}
